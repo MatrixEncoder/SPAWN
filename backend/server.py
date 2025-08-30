@@ -148,20 +148,22 @@ active_scans = {}
 # Scan type presets
 SCAN_PRESETS = {
     "quick": {
-        "modules": ["exec", "file", "sql", "xss"],
-        "depth": 2,
-        "level": 1,
-        "timeout": 15,
-        "max_scan_time": 300,  # 5 minutes
-        "description": "Quick scan for basic vulnerabilities"
+        "modules": ["exec", "file", "sql", "xss", "csrf", "ssrf"],
+        "depth": 3,
+        "level": 2,
+        "timeout": 30,
+        "max_scan_time": 600,  # 10 minutes
+        "description": "Quick scan for basic vulnerabilities",
+        "scope": "domain"
     },
     "standard": {
-        "modules": ["exec", "file", "sql", "xss", "csrf", "ssrf", "upload"],
-        "depth": 5,
-        "level": 1,
-        "timeout": 30,
-        "max_scan_time": 1800,  # 30 minutes
-        "description": "Standard comprehensive scan"
+        "modules": ["backup", "exec", "file", "sql", "xss", "csrf", "ssrf", "upload", "csp", "redirect", "permanentxss"],
+        "depth": 4,
+        "level": 2,
+        "timeout": 45,
+        "max_scan_time": 2400,  # 40 minutes
+        "description": "Standard comprehensive scan",
+        "scope": "domain"
     },
     "deep": {
         "modules": ["backup", "brute_login_form", "buster", "cms", "cookieflags", "crlf", "csp",
@@ -169,11 +171,12 @@ SCAN_PRESETS = {
                    "ldap", "log4shell", "methods", "network_device", "nikto", "permanentxss",
                    "redirect", "shellshock", "spring4shell", "sql", "ssl", "ssrf", "takeover",
                    "timesql", "upload", "wapp", "wp_enum", "xss", "xxe"],
-        "depth": 8,
-        "level": 2,
+        "depth": 6,
+        "level": 3,
         "timeout": 60,
         "max_scan_time": 7200,  # 2 hours
-        "description": "Deep comprehensive scan with all modules"
+        "description": "Deep comprehensive scan with all modules",
+        "scope": "domain"
     }
 }
 
