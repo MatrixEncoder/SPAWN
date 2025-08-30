@@ -197,10 +197,27 @@ async def get_available_modules():
     """Get list of available Wapiti modules"""
     return {"modules": WAPITI_MODULES}
 
+@api_router.get("/scan-presets")
+async def get_scan_presets():
+    """Get available scan type presets"""
+    return {"presets": SCAN_PRESETS}
+
 @api_router.post("/scans", response_model=ScanConfiguration)
 async def create_scan_configuration(config: ScanConfigurationCreate):
     """Create a new scan configuration"""
-    scan_config = ScanConfiguration(**config.dict())
+    # Apply preset if scan_type is specified
+    preset_config = {}
+    if config.scan_type in SCAN_PRESETS:
+        preset = SCAN_PRESETS[config.scan_type]
+        preset_config = {
+            "modules": config.modules or preset["modules"],
+            "depth": config.depth or preset["depth"],
+            "level": config.level or preset["level"],
+            "timeout": config.timeout or preset["timeout"],
+            "max_scan_time": config.max_scan_time or preset.get("max_scan_time")
+        }
+    
+    scan_config = ScanConfiguration(**{**config.dict(), **preset_config})
     await db.scan_configurations.insert_one(scan_config.dict())
     return scan_config
 
