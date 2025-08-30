@@ -135,11 +135,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: true
         agent: "main"
         comment: "Completely redesigned PDF export with SPAWN logo integration, professional styling, executive summary, severity-based vulnerability grouping, and enhanced branding"
+      - working: true
+        agent: "main"
+        comment: "MAJOR UPDATE: Completely restructured PDF/HTML/CSV reports to match professional vulnerability assessment format. New layout includes: 1) Header table with Target URL, Scan Date, Status, Total Vulnerabilities, Duration. 2) Vulnerability Distribution section with severity counts and risk assessments. 3) Detailed Vulnerability Findings table with #, Type, Severity, URL, Parameter, Description, CWE columns. 4) Continuation table for additional vulnerabilities with orange header styling. Format now matches professional security assessment reports with proper CWE mappings and enhanced vulnerability categorization."
 
   - task: "Scan Presets API Endpoint"
     implemented: true
