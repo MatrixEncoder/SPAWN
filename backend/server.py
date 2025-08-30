@@ -230,11 +230,11 @@ async def get_scan_results(scan_id: str):
 @api_router.get("/results")
 async def get_all_results():
     """Get all scan results with scan configuration info"""
-    results = await db.scan_results.find().sort("started_at", -1).to_list(1000)
+    results = await db.scan_results.find({}, {"_id": 0}).sort("started_at", -1).to_list(1000)
     enriched_results = []
     
     for result in results:
-        config = await db.scan_configurations.find_one({"id": result["scan_id"]})
+        config = await db.scan_configurations.find_one({"id": result["scan_id"]}, {"_id": 0})
         if config:
             enriched_result = {
                 **result,
