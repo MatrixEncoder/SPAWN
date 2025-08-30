@@ -216,7 +216,7 @@ async def stop_scan(scan_id: str):
 @api_router.get("/results/{result_id}", response_model=ScanResult)
 async def get_scan_result(result_id: str):
     """Get scan result by ID"""
-    result = await db.scan_results.find_one({"id": result_id})
+    result = await db.scan_results.find_one({"id": result_id}, {"_id": 0})
     if not result:
         raise HTTPException(status_code=404, detail="Scan result not found")
     return ScanResult(**result)
