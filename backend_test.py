@@ -1322,11 +1322,17 @@ def main():
     
     tester = SPAWNBackendTester()
     
-    # Check if priority tests only should be run
-    if len(sys.argv) > 1 and sys.argv[1] == "--priority":
-        success = tester.run_priority_tests_only()
+    # Check command line arguments
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "--priority":
+            success = tester.run_priority_tests_only()
+        elif sys.argv[1] == "--reports":
+            success = tester.run_report_export_tests()
+        else:
+            success = tester.run_comprehensive_test()
     else:
-        success = tester.run_comprehensive_test()
+        # Default: run report export tests as requested in review
+        success = tester.run_report_export_tests()
     
     if success:
         print("\n🎉 All critical backend tests passed!")
