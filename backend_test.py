@@ -691,12 +691,19 @@ class SPAWNBackendTester:
 
 def main():
     """Main test execution"""
+    import sys
+    
     print("🔍 SPAWN Vulnerability Scanner Backend Test Suite")
     print("Testing backend at: https://scan-fix-3.preview.emergentagent.com/api")
     print()
     
     tester = SPAWNBackendTester()
-    success = tester.run_comprehensive_test()
+    
+    # Check if priority tests only should be run
+    if len(sys.argv) > 1 and sys.argv[1] == "--priority":
+        success = tester.run_priority_tests_only()
+    else:
+        success = tester.run_comprehensive_test()
     
     if success:
         print("\n🎉 All critical backend tests passed!")
