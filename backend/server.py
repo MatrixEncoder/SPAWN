@@ -807,23 +807,136 @@ async def monitor_scan_progress_realtime(scan_id: str, result_id: str, process, 
         })
 
 async def export_to_csv(result: dict, config: dict):
-    """Export scan result to CSV"""
-    output = []
-    output.append(["Scan Name", config.get("name", "Unknown")])
-    output.append(["Target URL", config.get("target_url", "Unknown")])
-    output.append(["Scan Date", result.get("started_at", "")])
-    output.append([])
-    output.append(["Module", "Severity", "Title", "URL", "Parameter", "Description"])
+    """Export scan result to CSV matching the professional report format"""
     
-    for vuln in result.get("vulnerabilities", []):
+    # Calculate vulnerability counts
+    vulnerabilities = result.get("vulnerabilities", [])
+    vuln_count = len(vulnerabilities)
+    high_count = len([v for v in vulnerabilities if v.get("severity", "").lower() == "high"])
+    medium_count = len([v for v in vulnerabilities if v.get("severity", "").lower() == "medium"])
+    low_count = len([v for v in vulnerabilities if v.get("severity", "").lower() == "low"])
+    
+    # Format scan date
+    scan_date = result.get("started_at", "")
+    if scan_date:
+        try:
+            from datetime import datetime
+            if isinstance(scan_date, str):
+                if "T" in scan_date:
+                    dt = datetime.fromisoformat(scan_date.replace("Z", "+00:00"))
+                else:
+                    dt = datetime.strptime(scan_date[:19], "%Y-%m-%d %H:%M:%S")
+            else:
+                dt = scan_date
+            scan_date_formatted = dt.strftime("%Y-%m-%dT%H:%M:%S")
+        except:
+            scan_date_formatted = str(scan_date)[:19]
+    else:
+        scan_date_formatted = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    
+    output = []
+    
+    # Header Information (matching PDF/HTML format)
+    output.append(["SPAWN Professional Vulnerability Assessment Report"])
+    output.append([])
+    output.append(["Header Information"])
+    output.append(["Target URL", config.get("target_url", "")])
+    output.append(["Scan Date", scan_date_formatted])
+    output.append(["Scan Status", result.get("status", "COMPLETED").upper()])
+    output.append(["Total Vulnerabilities", str(vuln_count)])
+    output.append(["Scan Duration", "100% completed"])
+    output.append([])
+    
+    # Vulnerability Distribution
+    output.append(["Vulnerability Distribution"])
+    output.append(["Severity Level", "Count", "Risk Assessment"])
+    
+    severity_data = [
+        ('HIGH', high_count, 'Critical - Address immediately'),
+        ('MEDIUM', medium_count, 'Should be addressed soon'),
+        ('LOW', low_count, 'Monitor and address when possible')
+    ]
+    
+    for severity, count, risk in severity_data:
+        if count > 0:
+            output.append([severity, str(count), risk])
+    
+    output.append([])
+    
+    # Detailed Vulnerability Findings
+    output.append(["Detailed Vulnerability Findings"])
+    output.append(["#", "Type", "Severity", "URL", "Parameter", "Description", "CWE"])
+    
+    for i, vuln in enumerate(vulnerabilities, 1):
+        # Extract CWE
+        cwe = ""
+        description = vuln.get("description", "")
+        if "CWE-" in description:
+            import re
+            cwe_match = re.search(r'CWE-\d+', description)
+            if cwe_match:
+                cwe = cwe_match.group()
+        else:
+            vuln_type = vuln.get("module", "").upper()
+            cwe_mapping = {
+                'XSS': 'WSTG-INPV-07',
+                'SQL': 'WSTG-ATHZ-01', 
+                'CSRF': 'WSTG-SESS-05',
+                'SSRF': 'WSTG-INPV-19',
+                'PATH': 'WSTG-ATHZ-01',
+                'REFLECTED': 'WSTG-INPV-01'
+            }
+            cwe = cwe_mapping.get(vuln_type, 'WSTG-ATHZ-01')
+        
+        # Format vulnerability type
+        vuln_type = vuln.get("module", "UNKNOWN").upper()
+        if "XSS" in vuln_type:
+            vuln_type = "XSS"
+        elif "SQL" in vuln_type:
+            vuln_type = "SQL INJECTION"
+        elif "CSRF" in vuln_type:
+            vuln_type = "CSRF"
+        elif "PATH" in vuln_type:
+            vuln_type = "PATH TRAVERSAL"
+        elif "REFLECTED" in vuln_type:
+            vuln_type = "REFLECTED CR"
+        
         output.append([
-            vuln.get("module", ""),
-            vuln.get("severity", ""),
-            vuln.get("title", ""),
+            str(i),
+            vuln_type,
+            vuln.get("severity", "medium").upper(),
             vuln.get("url", ""),
             vuln.get("parameter", ""),
-            vuln.get("description", "")
+            description,
+            cwe
         ])
+    
+    # Add continuation data if many vulnerabilities
+    if len(vulnerabilities) > 10:
+        output.append([])
+        output.append(["Additional Vulnerability Summary"])
+        output.append(["Module", "Title", "URL", "Parameter"])
+        
+        for vuln in vulnerabilities[10:]:
+            module = vuln.get("module", "").replace("_", " ").title()
+            if "Cross" in module or "xss" in module.lower():
+                module = "Cross Site Requ"
+            elif "sql" in module.lower():
+                module = "SQL Injection"
+            elif "reflected" in module.lower():
+                module = "Reflected Cross"
+            
+            output.append([
+                module,
+                "Vulnerability Found",
+                "",
+                vuln.get("parameter", "")
+            ])
+    
+    output.append([])
+    output.append(["Generated by SPAWN - Professional Vulnerability Assessment Platform"])
+    output.append([f"Report Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+    output.append(["© 2024 SPAWN Security Solutions - All Rights Reserved"])
     
     # Create CSV file
     csv_content = []
@@ -836,7 +949,7 @@ async def export_to_csv(result: dict, config: dict):
     return StreamingResponse(
         iter([csv_string.encode()]),
         media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename=scan_result_{result['id']}.csv"}
+        headers={"Content-Disposition": f"attachment; filename=SPAWN_Security_Report_{result['id']}.csv"}
     )
 
 def _calculate_duration(result):
