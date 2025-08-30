@@ -95,11 +95,12 @@ class ScanConfiguration(BaseModel):
 class ScanConfigurationCreate(BaseModel):
     name: str
     target_url: str
+    scan_type: str = "standard"  # quick, standard, deep
     scope: str = "folder"
-    modules: List[str] = Field(default_factory=lambda: ["exec", "file", "sql", "xss", "csrf", "ssrf"])
-    depth: int = 5
-    level: int = 1
-    timeout: int = 30
+    modules: Optional[List[str]] = None
+    depth: Optional[int] = None
+    level: Optional[int] = None
+    timeout: Optional[int] = None
     max_scan_time: Optional[int] = None
     max_attack_time: Optional[int] = None
     proxy_url: Optional[str] = None
