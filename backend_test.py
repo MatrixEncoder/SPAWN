@@ -14,7 +14,7 @@ import threading
 from typing import Dict, Any, List
 
 class SPAWNBackendTester:
-    def __init__(self, base_url: str = "https://wapiti-scan-monitor.preview.emergentagent.com/api"):
+    def __init__(self, base_url: str = "https://scan-fix-3.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.ws_url = base_url.replace("https://", "wss://").replace("/api", "/ws")
         self.session = requests.Session()
@@ -464,7 +464,7 @@ class SPAWNBackendTester:
 def main():
     """Main test execution"""
     print("🔍 SPAWN Vulnerability Scanner Backend Test Suite")
-    print("Testing backend at: https://wapiti-scan-monitor.preview.emergentagent.com/api")
+    print("Testing backend at: https://scan-fix-3.preview.emergentagent.com/api")
     print()
     
     tester = SPAWNBackendTester()
