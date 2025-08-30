@@ -80,6 +80,9 @@ class ScanConfiguration(BaseModel):
     timeout: int = 30
     max_scan_time: Optional[int] = None
     max_attack_time: Optional[int] = None
+    max_links_per_page: Optional[int] = 20  # Enhanced parameter for better coverage
+    max_files_per_dir: Optional[int] = 10   # Enhanced parameter for better coverage  
+    scan_force: Optional[str] = "normal"    # Enhanced parameter: paranoid, sneaky, polite, normal, aggressive, insane
     proxy_url: Optional[str] = None
     user_agent: Optional[str] = None
     headers: Dict[str, str] = Field(default_factory=dict)
