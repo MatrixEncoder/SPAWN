@@ -363,6 +363,109 @@ class SPAWNBackendTester:
             self.log_test("Enhanced Scan Presets", False, f"Request error: {str(e)}")
         return False
 
+    def test_enhanced_wapiti_configuration(self):
+        """Test enhanced Wapiti configuration with new parameters"""
+        try:
+            # Test creating scan with enhanced deep preset
+            enhanced_scan_config = {
+                "name": f"Enhanced Deep Scan Test {uuid.uuid4().hex[:8]}",
+                "target_url": "http://testphp.vulnweb.com/",
+                "scan_type": "deep",
+                "scope": "folder",
+                "depth": 20,
+                "level": 3,
+                "timeout": 120,
+                "max_scan_time": 10800,
+                "max_links_per_page": 200,
+                "max_files_per_dir": 100,
+                "scan_force": "insane",
+                "verify_ssl": False
+            }
+            
+            # Create enhanced scan configuration
+            response = self.session.post(
+                f"{self.base_url}/scans",
+                json=enhanced_scan_config,
+                headers={"Content-Type": "application/json"}
+            )
+            
+            if response.status_code == 200:
+                scan_data = response.json()
+                scan_id = scan_data["id"]
+                self.created_scan_ids.append(scan_id)
+                
+                # Verify enhanced parameters are applied
+                enhanced_params_correct = True
+                issues = []
+                
+                if scan_data.get("depth") != 20:
+                    issues.append(f"depth: expected 20, got {scan_data.get('depth')}")
+                    enhanced_params_correct = False
+                
+                if scan_data.get("scan_force") != "insane":
+                    issues.append(f"scan_force: expected 'insane', got {scan_data.get('scan_force')}")
+                    enhanced_params_correct = False
+                
+                if scan_data.get("max_links_per_page") != 200:
+                    issues.append(f"max_links_per_page: expected 200, got {scan_data.get('max_links_per_page')}")
+                    enhanced_params_correct = False
+                
+                if scan_data.get("max_files_per_dir") != 100:
+                    issues.append(f"max_files_per_dir: expected 100, got {scan_data.get('max_files_per_dir')}")
+                    enhanced_params_correct = False
+                
+                if scan_data.get("scope") != "folder":
+                    issues.append(f"scope: expected 'folder', got {scan_data.get('scope')}")
+                    enhanced_params_correct = False
+                
+                if enhanced_params_correct:
+                    self.log_test("Enhanced Configuration Creation", True, 
+                        f"Enhanced deep scan config created with all parameters: depth=20, scan_force=insane, "
+                        f"max_links_per_page=200, max_files_per_dir=100, scope=folder")
+                else:
+                    self.log_test("Enhanced Configuration Creation", False, f"Enhanced parameters not applied correctly: {'; '.join(issues)}", scan_data)
+                
+                # Start the enhanced scan to test Wapiti command generation
+                start_response = self.session.post(f"{self.base_url}/scans/{scan_id}/start")
+                if start_response.status_code == 200:
+                    start_data = start_response.json()
+                    result_id = start_data["result_id"]
+                    self.created_result_ids.append(result_id)
+                    
+                    self.log_test("Enhanced Scan Execution", True, 
+                        f"Enhanced deep scan started successfully with result_id: {result_id}")
+                    
+                    # Monitor for a short time to verify it's running with enhanced parameters
+                    time.sleep(5)
+                    
+                    result_response = self.session.get(f"{self.base_url}/results/{result_id}")
+                    if result_response.status_code == 200:
+                        result_data = result_response.json()
+                        status = result_data.get("status", "unknown")
+                        progress = result_data.get("progress", 0)
+                        
+                        if status in ["running", "completed"]:
+                            self.log_test("Enhanced Wapiti Command Generation", True, 
+                                f"Enhanced Wapiti scan executing properly: status={status}, progress={progress}%")
+                            return True
+                        else:
+                            self.log_test("Enhanced Wapiti Command Generation", False, 
+                                f"Enhanced scan not running properly: status={status}")
+                    else:
+                        self.log_test("Enhanced Wapiti Command Generation", False, 
+                            f"Cannot retrieve scan result: {result_response.status_code}")
+                else:
+                    self.log_test("Enhanced Scan Execution", False, 
+                        f"Failed to start enhanced scan: {start_response.status_code}")
+            else:
+                self.log_test("Enhanced Configuration Creation", False, 
+                    f"Failed to create enhanced scan config: {response.status_code}")
+                
+        except Exception as e:
+            self.log_test("Enhanced Wapiti Configuration", False, f"Error testing enhanced configuration: {str(e)}")
+        
+        return False
+
     def test_vulnerable_site_scanning(self):
         """Test scanning against a known vulnerable site to verify authentic vulnerability detection"""
         try:
