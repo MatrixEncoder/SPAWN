@@ -276,9 +276,8 @@ async def run_wapiti_scan(scan_id: str, config: dict, result_id: str):
         output_dir = f"/tmp/wapiti_output_{scan_id}"
         os.makedirs(output_dir, exist_ok=True)
         
-        # Build Wapiti command
-        wapiti_path = "/root/.venv/bin/wapiti"  # Use full path to wapiti
-        cmd = [wapiti_path, "-u", config["target_url"]]
+        # Build Wapiti command - use system PATH for Docker compatibility
+        cmd = ["wapiti", "-u", config["target_url"]]
         
         # Add scope
         cmd.extend(["--scope", config["scope"]])
