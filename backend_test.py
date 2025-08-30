@@ -1647,11 +1647,13 @@ def main():
             success = tester.run_priority_tests_only()
         elif sys.argv[1] == "--reports":
             success = tester.run_report_export_tests()
+        elif sys.argv[1] == "--review":
+            success = tester.run_review_request_test()
         else:
             success = tester.run_comprehensive_test()
     else:
-        # Default: run report export tests as requested in review
-        success = tester.run_report_export_tests()
+        # Default: run review request test as requested
+        success = tester.run_review_request_test()
     
     if success:
         print("\n🎉 All critical backend tests passed!")
