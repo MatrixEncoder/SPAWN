@@ -20,6 +20,7 @@ const App = () => {
   const [modules, setModules] = useState([]);
   const [scanPresets, setScanPresets] = useState({});
   const [ws, setWs] = useState(null);
+  const [realtimeUpdates, setRealtimeUpdates] = useState({});
 
   // WebSocket connection for real-time updates
   useEffect(() => {
