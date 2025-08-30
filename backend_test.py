@@ -1089,7 +1089,154 @@ class SPAWNBackendTester:
         
         return self.get_overall_success()
 
-    def run_priority_tests_only(self):
+    def create_test_scan_with_vulnerabilities(self):
+        """Create a test scan against a vulnerable site to generate results for report testing"""
+        try:
+            # Create scan configuration for vulnerable site
+            scan_config = {
+                "name": f"Report Test Scan {uuid.uuid4().hex[:8]}",
+                "target_url": "http://testphp.vulnweb.com/",
+                "scan_type": "standard",
+                "scope": "folder",
+                "depth": 12,
+                "level": 2,
+                "timeout": 90,
+                "max_scan_time": 1800,  # 30 minutes
+                "max_links_per_page": 100,
+                "max_files_per_dir": 50,
+                "scan_force": "aggressive",
+                "verify_ssl": False
+            }
+            
+            # Create scan configuration
+            response = self.session.post(
+                f"{self.base_url}/scans",
+                json=scan_config,
+                headers={"Content-Type": "application/json"}
+            )
+            
+            if response.status_code == 200:
+                scan_data = response.json()
+                scan_id = scan_data["id"]
+                self.created_scan_ids.append(scan_id)
+                
+                # Start the scan
+                start_response = self.session.post(f"{self.base_url}/scans/{scan_id}/start")
+                if start_response.status_code == 200:
+                    start_data = start_response.json()
+                    result_id = start_data["result_id"]
+                    self.created_result_ids.append(result_id)
+                    
+                    self.log_test("Test Scan Creation", True, f"Test scan created and started: {result_id}")
+                    
+                    # Wait for scan to complete or find vulnerabilities
+                    max_wait_time = 300  # 5 minutes
+                    start_time = time.time()
+                    
+                    while time.time() - start_time < max_wait_time:
+                        result_response = self.session.get(f"{self.base_url}/results/{result_id}")
+                        if result_response.status_code == 200:
+                            result_data = result_response.json()
+                            status = result_data.get("status", "unknown")
+                            vulnerabilities = result_data.get("vulnerabilities", [])
+                            
+                            if status == "completed" or len(vulnerabilities) > 0:
+                                self.log_test("Test Scan Completion", True, 
+                                    f"Test scan completed with {len(vulnerabilities)} vulnerabilities")
+                                return result_id
+                            elif status == "failed":
+                                self.log_test("Test Scan Completion", False, "Test scan failed")
+                                break
+                        
+                        time.sleep(10)
+                    
+                    # If scan is still running but we have some results, use it
+                    if len(vulnerabilities) > 0:
+                        return result_id
+                    
+                    self.log_test("Test Scan Timeout", False, "Test scan did not complete in time")
+                else:
+                    self.log_test("Test Scan Start", False, f"Failed to start test scan: {start_response.status_code}")
+            else:
+                self.log_test("Test Scan Config", False, f"Failed to create test scan config: {response.status_code}")
+                
+        except Exception as e:
+            self.log_test("Test Scan Creation", False, f"Error creating test scan: {str(e)}")
+        
+        return None
+
+    def run_report_export_tests(self):
+        """Run comprehensive report export tests as requested in the review"""
+        print("🎯 Starting SPAWN Report Export Functionality Tests (Review Request Focus)")
+        print("=" * 80)
+        
+        # Test basic connectivity first
+        if not self.test_root_endpoint():
+            print("❌ Cannot connect to backend. Stopping tests.")
+            return False
+        
+        print("\n🎯 TESTING UPDATED REPORT EXPORT FUNCTIONALITY")
+        print("Focus: PDF, HTML, CSV export formats with professional vulnerability assessment layout")
+        
+        # First, try to use existing scan result if available
+        existing_result_tested = False
+        try:
+            # Try a few common result IDs that might exist
+            potential_result_ids = [
+                "581a87f8-acc7-49b5-959d-4a9461e49dbf",
+                # Add more if needed
+            ]
+            
+            for result_id in potential_result_ids:
+                response = self.session.get(f"{self.base_url}/results/{result_id}")
+                if response.status_code == 200:
+                    result_data = response.json()
+                    if result_data.get("status") == "completed":
+                        vulnerabilities = result_data.get("vulnerabilities", [])
+                        if len(vulnerabilities) > 0:
+                            print(f"\n✅ Found existing scan result with {len(vulnerabilities)} vulnerabilities: {result_id}")
+                            
+                            # Test all report formats with existing result
+                            self.test_export_functionality(result_id)
+                            self.test_professional_report_format(result_id)
+                            self.test_cwe_mappings_and_vulnerability_types(result_id)
+                            self.test_report_content_quality(result_id)
+                            existing_result_tested = True
+                            break
+        except Exception as e:
+            print(f"Error checking existing results: {e}")
+        
+        # If no existing result with vulnerabilities found, create a new test scan
+        if not existing_result_tested:
+            print("\n🔄 No suitable existing scan result found. Creating new test scan...")
+            test_result_id = self.create_test_scan_with_vulnerabilities()
+            
+            if test_result_id:
+                print(f"\n✅ Created test scan result: {test_result_id}")
+                
+                # Test all report formats with new result
+                self.test_export_functionality(test_result_id)
+                self.test_professional_report_format(test_result_id)
+                self.test_cwe_mappings_and_vulnerability_types(test_result_id)
+                self.test_report_content_quality(test_result_id)
+            else:
+                print("\n❌ Could not create test scan with vulnerabilities")
+                # Still test export functionality with any available result
+                all_results_response = self.session.get(f"{self.base_url}/results")
+                if all_results_response.status_code == 200:
+                    all_results = all_results_response.json()
+                    if all_results:
+                        # Use the first available result
+                        first_result = all_results[0]
+                        result_id = first_result.get("id")
+                        if result_id:
+                            print(f"\n⚠️  Testing with available result (may have no vulnerabilities): {result_id}")
+                            self.test_export_functionality(result_id)
+                            self.test_professional_report_format(result_id)
+        
+        # Print summary
+        self.print_test_summary()
+        return self.get_overall_success()
         """Run only the priority tests mentioned in the review request"""
         print("🎯 Starting SPAWN Enhanced Wapiti Configuration Tests (Review Request Focus)")
         print("=" * 80)
