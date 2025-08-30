@@ -166,7 +166,7 @@ async def create_scan_configuration(config: ScanConfigurationCreate):
 @api_router.get("/scans", response_model=List[ScanConfiguration])
 async def get_scan_configurations():
     """Get all scan configurations"""
-    configs = await db.scan_configurations.find().to_list(1000)
+    configs = await db.scan_configurations.find({}, {"_id": 0}).to_list(1000)
     return [ScanConfiguration(**config) for config in configs]
 
 @api_router.get("/scans/{scan_id}", response_model=ScanConfiguration)
