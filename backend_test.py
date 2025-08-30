@@ -279,7 +279,7 @@ class SPAWNBackendTester:
         return success_count == len(formats)
 
     def test_scan_presets(self):
-        """Test GET /api/scan-presets endpoint for improved configurations"""
+        """Test GET /api/scan-presets endpoint for enhanced Wapiti configurations"""
         try:
             response = self.session.get(f"{self.base_url}/scan-presets")
             if response.status_code == 200:
@@ -287,39 +287,80 @@ class SPAWNBackendTester:
                 if "presets" in data:
                     presets = data["presets"]
                     
-                    # Check if quick preset has improved parameters
-                    if "quick" in presets:
-                        quick = presets["quick"]
-                        expected_improvements = {
-                            "scope": "domain",  # Should be domain, not folder
-                            "depth": 3,         # Should be at least 3
-                            "level": 2,         # Should be at least 2
-                            "modules": 6        # Should have 6 modules
+                    # Test all three presets: quick, standard, deep
+                    preset_tests = {
+                        "quick": {
+                            "min_depth": 8,
+                            "min_modules": 9,
+                            "expected_scope": "folder",
+                            "expected_scan_force": "normal",
+                            "min_max_links_per_page": 50,
+                            "min_max_files_per_dir": 30
+                        },
+                        "standard": {
+                            "min_depth": 12,
+                            "min_modules": 20,
+                            "expected_scope": "folder", 
+                            "expected_scan_force": "aggressive",
+                            "min_max_links_per_page": 100,
+                            "min_max_files_per_dir": 50
+                        },
+                        "deep": {
+                            "min_depth": 20,
+                            "min_modules": 30,
+                            "expected_scope": "folder",
+                            "expected_scan_force": "insane",
+                            "min_max_links_per_page": 200,
+                            "min_max_files_per_dir": 100
                         }
-                        
-                        issues = []
-                        if quick.get("scope") != expected_improvements["scope"]:
-                            issues.append(f"scope is {quick.get('scope')}, expected {expected_improvements['scope']}")
-                        if quick.get("depth", 0) < expected_improvements["depth"]:
-                            issues.append(f"depth is {quick.get('depth')}, expected >= {expected_improvements['depth']}")
-                        if quick.get("level", 0) < expected_improvements["level"]:
-                            issues.append(f"level is {quick.get('level')}, expected >= {expected_improvements['level']}")
-                        if len(quick.get("modules", [])) < expected_improvements["modules"]:
-                            issues.append(f"modules count is {len(quick.get('modules', []))}, expected >= {expected_improvements['modules']}")
-                        
-                        if not issues:
-                            self.log_test("Scan Presets - Quick Improved", True, f"Quick preset has improved parameters: scope={quick.get('scope')}, depth={quick.get('depth')}, level={quick.get('level')}, modules={len(quick.get('modules', []))}")
-                        else:
-                            self.log_test("Scan Presets - Quick Improved", False, f"Quick preset issues: {'; '.join(issues)}", quick)
+                    }
                     
-                    self.log_test("Scan Presets", True, f"Retrieved {len(presets)} scan presets")
-                    return True
+                    all_presets_valid = True
+                    
+                    for preset_name, expected in preset_tests.items():
+                        if preset_name in presets:
+                            preset = presets[preset_name]
+                            issues = []
+                            
+                            # Check enhanced parameters
+                            if preset.get("depth", 0) < expected["min_depth"]:
+                                issues.append(f"depth is {preset.get('depth')}, expected >= {expected['min_depth']}")
+                            
+                            if len(preset.get("modules", [])) < expected["min_modules"]:
+                                issues.append(f"modules count is {len(preset.get('modules', []))}, expected >= {expected['min_modules']}")
+                            
+                            if preset.get("scope") != expected["expected_scope"]:
+                                issues.append(f"scope is {preset.get('scope')}, expected {expected['expected_scope']}")
+                            
+                            if preset.get("scan_force") != expected["expected_scan_force"]:
+                                issues.append(f"scan_force is {preset.get('scan_force')}, expected {expected['expected_scan_force']}")
+                            
+                            if preset.get("max_links_per_page", 0) < expected["min_max_links_per_page"]:
+                                issues.append(f"max_links_per_page is {preset.get('max_links_per_page')}, expected >= {expected['min_max_links_per_page']}")
+                            
+                            if preset.get("max_files_per_dir", 0) < expected["min_max_files_per_dir"]:
+                                issues.append(f"max_files_per_dir is {preset.get('max_files_per_dir')}, expected >= {expected['min_max_files_per_dir']}")
+                            
+                            if not issues:
+                                self.log_test(f"Enhanced Preset - {preset_name.upper()}", True, 
+                                    f"{preset_name} preset enhanced: depth={preset.get('depth')}, modules={len(preset.get('modules', []))}, "
+                                    f"scope={preset.get('scope')}, scan_force={preset.get('scan_force')}, "
+                                    f"max_links_per_page={preset.get('max_links_per_page')}, max_files_per_dir={preset.get('max_files_per_dir')}")
+                            else:
+                                self.log_test(f"Enhanced Preset - {preset_name.upper()}", False, f"{preset_name} preset issues: {'; '.join(issues)}", preset)
+                                all_presets_valid = False
+                        else:
+                            self.log_test(f"Enhanced Preset - {preset_name.upper()}", False, f"{preset_name} preset not found")
+                            all_presets_valid = False
+                    
+                    self.log_test("Enhanced Scan Presets", all_presets_valid, f"Retrieved {len(presets)} enhanced scan presets")
+                    return all_presets_valid
                 else:
-                    self.log_test("Scan Presets", False, "Invalid response format", data)
+                    self.log_test("Enhanced Scan Presets", False, "Invalid response format", data)
             else:
-                self.log_test("Scan Presets", False, f"HTTP {response.status_code}", response.text)
+                self.log_test("Enhanced Scan Presets", False, f"HTTP {response.status_code}", response.text)
         except Exception as e:
-            self.log_test("Scan Presets", False, f"Request error: {str(e)}")
+            self.log_test("Enhanced Scan Presets", False, f"Request error: {str(e)}")
         return False
 
     def test_vulnerable_site_scanning(self):
