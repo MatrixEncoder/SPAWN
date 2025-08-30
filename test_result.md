@@ -105,6 +105,54 @@
 user_problem_statement: "Enhance the SPAWN vulnerability scanner with authentic, real Wapiti scanning, attractive UI with charts and features, real-time scan progress tracking, scan type selection (quick, standard, deep), and improved PDF reports with SPAWN branding."
 
 backend:
+  - task: "Scan Type Presets (Quick, Standard, Deep)"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Implemented scan presets with different Wapiti configurations - Quick (4 modules, depth 2), Standard (7 modules, depth 5), Deep (all 33 modules, depth 8)"
+
+  - task: "Real-time Progress Tracking"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high" 
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Implemented monitor_scan_progress_realtime function with WebSocket broadcasts for real-time progress updates during scans"
+
+  - task: "Enhanced PDF Reports with SPAWN Branding"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Completely redesigned PDF export with SPAWN logo integration, professional styling, executive summary, severity-based vulnerability grouping, and enhanced branding"
+
+  - task: "Scan Presets API Endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Added GET /api/scan-presets endpoint to provide preset configurations to frontend"
+
   - task: "Root API Endpoint"
     implemented: true
     working: true
