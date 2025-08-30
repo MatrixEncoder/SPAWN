@@ -6,8 +6,23 @@ SPAWN is a comprehensive web-based vulnerability scanner that provides a modern 
 ## Prerequisites
 - Docker Engine 20.10+
 - Docker Compose 2.0+
-- At least 2GB RAM available
-- 10GB free disk space
+- At least 4GB RAM available (recommended 8GB)
+- 20GB free disk space
+- Stable internet connection for dependency installation
+
+## Common Issues & Solutions
+
+### Issue 1: Node.js Version Compatibility
+**Error**: `react-router-dom@7.8.2: The engine "node" is incompatible with this module`  
+**Solution**: Updated to Node.js 20+ in Dockerfile.frontend
+
+### Issue 2: Missing System Dependencies  
+**Error**: Build failures during yarn install  
+**Solution**: Added system dependencies (python3, make, g++) in Dockerfile
+
+### Issue 3: Network Timeouts
+**Error**: Package installation timeouts  
+**Solution**: Added network timeout configuration
 
 ## Quick Start
 
@@ -16,24 +31,32 @@ SPAWN is a comprehensive web-based vulnerability scanner that provides a modern 
 # Navigate to the SPAWN directory
 cd /path/to/spawn
 
-# Build and start all services
+# Build and start all services (this may take 10-15 minutes on first run)
 docker-compose up --build -d
 ```
 
-### 2. Verify Services
+### 2. Monitor Build Progress
 ```bash
-# Check service status
-docker-compose ps
+# Watch the build logs
+docker-compose logs -f
 
-# View logs
+# Check specific service logs
 docker-compose logs -f backend
 docker-compose logs -f frontend
 ```
 
-### 3. Access SPAWN
+### 3. Verify Services
+```bash
+# Check service status
+docker-compose ps
+
+# All services should show as "Up"
+```
+
+### 4. Access SPAWN
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8001/api
-- **MongoDB**: localhost:27017
+- **MongoDB**: localhost:27017 (internal use)
 
 ## Configuration
 
