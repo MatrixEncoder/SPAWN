@@ -1422,6 +1422,68 @@ class SPAWNBackendTester:
         
         return None
 
+    def run_review_request_test(self):
+        """Run the specific test requested in the review"""
+        print("🎯 SPAWN VULNERABILITY DETECTION AUTHENTICITY TEST")
+        print("=" * 80)
+        print("Review Request: Test SPAWN scanner's actual vulnerability detection capabilities")
+        print("Target: http://testhtml5.vulnweb.com with deep scan configuration")
+        print("Expected: >10 vulnerabilities with authentic security findings")
+        print("=" * 80)
+        
+        # Test basic connectivity first
+        if not self.test_root_endpoint():
+            print("❌ Cannot connect to backend. Stopping tests.")
+            return False
+        
+        # Test scan presets to ensure enhanced configuration is available
+        print("\n🔧 Verifying enhanced Wapiti configuration...")
+        self.test_scan_presets()
+        
+        # Run the main vulnerability detection test
+        success = self.test_review_request_vulnerability_detection()
+        
+        # Print summary
+        print("\n" + "=" * 80)
+        print("📊 REVIEW REQUEST TEST SUMMARY")
+        print("=" * 80)
+        
+        passed_tests = sum(1 for result in self.test_results if result["success"])
+        total_tests = len(self.test_results)
+        success_rate = (passed_tests / total_tests * 100) if total_tests > 0 else 0
+        
+        print(f"Tests Passed: {passed_tests}/{total_tests} ({success_rate:.1f}%)")
+        
+        # Show key findings
+        key_findings = []
+        for result in self.test_results:
+            if "Review Request" in result["test"]:
+                status = "✅ PASS" if result["success"] else "❌ FAIL"
+                key_findings.append(f"{status}: {result['test']} - {result['message']}")
+        
+        if key_findings:
+            print("\n🔍 KEY FINDINGS:")
+            for finding in key_findings:
+                print(f"   {finding}")
+        
+        # Overall assessment
+        critical_tests = [
+            "Review Request - Vulnerability Count",
+            "Review Request - Scan Duration Authenticity", 
+            "Review Request - Progress Authenticity"
+        ]
+        
+        critical_passed = sum(1 for result in self.test_results 
+                            if result["test"] in critical_tests and result["success"])
+        
+        print(f"\n🎯 AUTHENTICITY ASSESSMENT:")
+        if critical_passed >= 2:
+            print("   ✅ SPAWN appears to be performing authentic vulnerability scanning")
+        else:
+            print("   ❌ SPAWN may not be performing authentic vulnerability scanning")
+        
+        return success
+
     def run_report_export_tests(self):
         """Run comprehensive report export tests as requested in the review"""
         print("🎯 Starting SPAWN Report Export Functionality Tests (Review Request Focus)")
