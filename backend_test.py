@@ -1027,6 +1027,263 @@ class SPAWNBackendTester:
         
         return all(result[1] for result in error_tests)
 
+    def test_review_request_vulnerability_detection(self):
+        """Test SPAWN scanner's actual vulnerability detection capabilities as requested in review"""
+        print("🎯 TESTING REVIEW REQUEST: SPAWN Vulnerability Detection Authenticity")
+        print("=" * 80)
+        print("Testing against http://testhtml5.vulnweb.com with deep scan configuration")
+        print("Expected: >10 vulnerabilities with authentic security findings")
+        
+        try:
+            # 1. Create Real Scan Configuration with "deep" scan type
+            deep_scan_config = {
+                "name": f"Review Request Deep Scan - testhtml5.vulnweb.com",
+                "target_url": "http://testhtml5.vulnweb.com",
+                "scan_type": "deep",
+                "scope": "folder",  # Enhanced for maximum coverage
+                "depth": 20,        # Maximum depth for comprehensive scanning
+                "level": 3,         # Maximum level
+                "timeout": 120,     # Extended timeout for thorough scanning
+                "max_scan_time": 3600,  # 1 hour for complete scanning
+                "max_links_per_page": 200,  # Maximum links per page
+                "max_files_per_dir": 100,   # Maximum files per directory
+                "scan_force": "insane",     # Maximum scanning intensity
+                "verify_ssl": False
+            }
+            
+            print(f"\n📋 Creating deep scan configuration:")
+            print(f"   Target: {deep_scan_config['target_url']}")
+            print(f"   Scan Type: {deep_scan_config['scan_type']}")
+            print(f"   Depth: {deep_scan_config['depth']}")
+            print(f"   Scan Force: {deep_scan_config['scan_force']}")
+            print(f"   Max Links/Page: {deep_scan_config['max_links_per_page']}")
+            print(f"   Max Files/Dir: {deep_scan_config['max_files_per_dir']}")
+            
+            # Create scan configuration
+            response = self.session.post(
+                f"{self.base_url}/scans",
+                json=deep_scan_config,
+                headers={"Content-Type": "application/json"}
+            )
+            
+            if response.status_code != 200:
+                self.log_test("Review Request - Scan Config Creation", False, 
+                    f"Failed to create scan config: HTTP {response.status_code}")
+                return False
+            
+            scan_data = response.json()
+            scan_id = scan_data["id"]
+            self.created_scan_ids.append(scan_id)
+            
+            # Verify deep scan preset parameters are applied
+            config_issues = []
+            if scan_data.get("depth") < 20:
+                config_issues.append(f"depth: {scan_data.get('depth')} < 20")
+            if scan_data.get("scan_force") != "insane":
+                config_issues.append(f"scan_force: {scan_data.get('scan_force')} != insane")
+            if scan_data.get("max_links_per_page") < 200:
+                config_issues.append(f"max_links_per_page: {scan_data.get('max_links_per_page')} < 200")
+            
+            if config_issues:
+                self.log_test("Review Request - Deep Scan Config", False, 
+                    f"Deep scan parameters not properly applied: {'; '.join(config_issues)}")
+            else:
+                self.log_test("Review Request - Deep Scan Config", True, 
+                    "Deep scan configuration created with maximum vulnerability detection parameters")
+            
+            # 2. Execute the Scan
+            print(f"\n🚀 Starting deep vulnerability scan...")
+            start_response = self.session.post(f"{self.base_url}/scans/{scan_id}/start")
+            
+            if start_response.status_code != 200:
+                self.log_test("Review Request - Scan Execution", False, 
+                    f"Failed to start scan: HTTP {start_response.status_code}")
+                return False
+            
+            start_data = start_response.json()
+            result_id = start_data["result_id"]
+            self.created_result_ids.append(result_id)
+            
+            self.log_test("Review Request - Scan Execution", True, 
+                f"Deep scan started successfully, result_id: {result_id}")
+            
+            # 3. Monitor the actual scanning process
+            print(f"\n📊 Monitoring scan progress and authenticity...")
+            max_wait_time = 1800  # 30 minutes maximum wait
+            start_time = time.time()
+            last_progress = 0
+            progress_updates = 0
+            vulnerability_count = 0
+            scan_phases_detected = []
+            
+            while time.time() - start_time < max_wait_time:
+                result_response = self.session.get(f"{self.base_url}/results/{result_id}")
+                if result_response.status_code == 200:
+                    result_data = result_response.json()
+                    current_progress = result_data.get("progress", 0)
+                    status = result_data.get("status", "unknown")
+                    vulnerabilities = result_data.get("vulnerabilities", [])
+                    current_vuln_count = len(vulnerabilities)
+                    
+                    # Track progress updates for authenticity verification
+                    if current_progress > last_progress:
+                        progress_updates += 1
+                        last_progress = current_progress
+                        print(f"   Progress: {current_progress}% - Status: {status} - Vulnerabilities: {current_vuln_count}")
+                        
+                        # Track scan phases for authenticity
+                        if current_progress >= 10 and "Loading" not in scan_phases_detected:
+                            scan_phases_detected.append("Loading")
+                        if current_progress >= 25 and "Crawling" not in scan_phases_detected:
+                            scan_phases_detected.append("Crawling")
+                        if current_progress >= 60 and "Analyzing" not in scan_phases_detected:
+                            scan_phases_detected.append("Analyzing")
+                        if current_progress >= 80 and "Attacking" not in scan_phases_detected:
+                            scan_phases_detected.append("Attacking")
+                    
+                    # Track vulnerability discovery
+                    if current_vuln_count > vulnerability_count:
+                        vulnerability_count = current_vuln_count
+                        print(f"   🔍 Vulnerabilities found: {vulnerability_count}")
+                    
+                    if status == "completed":
+                        scan_duration = time.time() - start_time
+                        print(f"\n✅ Scan completed in {scan_duration:.1f} seconds")
+                        
+                        # 4. Validate Real Vulnerability Detection
+                        final_vulnerabilities = result_data.get("vulnerabilities", [])
+                        vuln_count = len(final_vulnerabilities)
+                        
+                        print(f"\n🔍 VULNERABILITY DETECTION RESULTS:")
+                        print(f"   Total vulnerabilities found: {vuln_count}")
+                        
+                        if vuln_count > 10:
+                            self.log_test("Review Request - Vulnerability Count", True, 
+                                f"Found {vuln_count} vulnerabilities (>10 as expected)")
+                        elif vuln_count > 0:
+                            self.log_test("Review Request - Vulnerability Count", False, 
+                                f"Found only {vuln_count} vulnerabilities (<10 expected)")
+                        else:
+                            self.log_test("Review Request - Vulnerability Count", False, 
+                                "No vulnerabilities found on known vulnerable site")
+                        
+                        # Analyze vulnerability types for authenticity
+                        vuln_types = {}
+                        severity_counts = {"high": 0, "medium": 0, "low": 0, "info": 0}
+                        
+                        for vuln in final_vulnerabilities:
+                            vuln_type = vuln.get("module", "unknown")
+                            severity = vuln.get("severity", "unknown").lower()
+                            
+                            vuln_types[vuln_type] = vuln_types.get(vuln_type, 0) + 1
+                            if severity in severity_counts:
+                                severity_counts[severity] += 1
+                        
+                        print(f"\n📊 VULNERABILITY ANALYSIS:")
+                        print(f"   Vulnerability Types: {dict(vuln_types)}")
+                        print(f"   Severity Distribution: {dict(severity_counts)}")
+                        
+                        # Check for expected vulnerability types on a vulnerable site
+                        expected_types = ["xss", "sql", "csrf", "exec", "file"]
+                        found_expected_types = [vtype for vtype in expected_types if vtype in vuln_types]
+                        
+                        if len(found_expected_types) >= 2:
+                            self.log_test("Review Request - Vulnerability Types", True, 
+                                f"Found expected vulnerability types: {found_expected_types}")
+                        else:
+                            self.log_test("Review Request - Vulnerability Types", False, 
+                                f"Limited vulnerability types found: {list(vuln_types.keys())}")
+                        
+                        # 5. Authenticity Verification
+                        print(f"\n🔐 AUTHENTICITY VERIFICATION:")
+                        
+                        # Check scan duration (real scans take time)
+                        if scan_duration > 30:  # Real scans should take at least 30 seconds
+                            self.log_test("Review Request - Scan Duration Authenticity", True, 
+                                f"Scan duration ({scan_duration:.1f}s) indicates real scanning activity")
+                        else:
+                            self.log_test("Review Request - Scan Duration Authenticity", False, 
+                                f"Scan duration ({scan_duration:.1f}s) too short for authentic scanning")
+                        
+                        # Check progress updates (real scans have incremental progress)
+                        if progress_updates >= 5:
+                            self.log_test("Review Request - Progress Authenticity", True, 
+                                f"Received {progress_updates} progress updates indicating real-time scanning")
+                        else:
+                            self.log_test("Review Request - Progress Authenticity", False, 
+                                f"Only {progress_updates} progress updates - may indicate mock scanning")
+                        
+                        # Check scan phases
+                        if len(scan_phases_detected) >= 3:
+                            self.log_test("Review Request - Scan Phases Authenticity", True, 
+                                f"Detected scan phases: {scan_phases_detected}")
+                        else:
+                            self.log_test("Review Request - Scan Phases Authenticity", False, 
+                                f"Limited scan phases detected: {scan_phases_detected}")
+                        
+                        # 6. Test Report Generation with Real Vulnerability Data
+                        print(f"\n📄 TESTING REPORT GENERATION WITH REAL VULNERABILITY DATA:")
+                        
+                        if vuln_count > 0:
+                            # Test all export formats
+                            self.test_export_functionality(result_id)
+                            self.test_professional_report_format(result_id)
+                            self.test_cwe_mappings_and_vulnerability_types(result_id)
+                            self.test_report_content_quality(result_id)
+                            
+                            # Additional verification for report content with real vulnerabilities
+                            html_response = self.session.get(f"{self.base_url}/results/{result_id}/export/html")
+                            if html_response.status_code == 200:
+                                html_content = html_response.text
+                                
+                                # Check if real vulnerability data is in reports
+                                real_vuln_indicators = [
+                                    "testhtml5.vulnweb.com",
+                                    str(vuln_count),
+                                    "XSS" if "xss" in vuln_types else None,
+                                    "SQL" if "sql" in vuln_types else None
+                                ]
+                                
+                                real_indicators_found = sum(1 for indicator in real_vuln_indicators 
+                                                          if indicator and indicator in html_content)
+                                
+                                if real_indicators_found >= 2:
+                                    self.log_test("Review Request - Report Real Data", True, 
+                                        f"Report contains real vulnerability data ({real_indicators_found}/4 indicators)")
+                                else:
+                                    self.log_test("Review Request - Report Real Data", False, 
+                                        f"Report may not contain authentic data ({real_indicators_found}/4 indicators)")
+                        
+                        return True
+                        
+                    elif status == "failed":
+                        error_msg = result_data.get("error_message", "Unknown error")
+                        self.log_test("Review Request - Scan Completion", False, 
+                            f"Scan failed: {error_msg}")
+                        return False
+                
+                time.sleep(15)  # Wait 15 seconds between checks
+            
+            # Timeout case
+            self.log_test("Review Request - Scan Timeout", False, 
+                f"Scan did not complete within {max_wait_time/60:.1f} minutes")
+            
+            # Still check partial results
+            result_response = self.session.get(f"{self.base_url}/results/{result_id}")
+            if result_response.status_code == 200:
+                result_data = result_response.json()
+                partial_vulns = result_data.get("vulnerabilities", [])
+                if len(partial_vulns) > 0:
+                    self.log_test("Review Request - Partial Results", True, 
+                        f"Found {len(partial_vulns)} vulnerabilities before timeout")
+                    return True
+            
+            return False
+            
+        except Exception as e:
+            self.log_test("Review Request - General Error", False, f"Error during vulnerability detection test: {str(e)}")
+            return False
+
     def run_comprehensive_test(self):
         """Run all backend tests"""
         print("🚀 Starting SPAWN Backend Comprehensive Test Suite")
