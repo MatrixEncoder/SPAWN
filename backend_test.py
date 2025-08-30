@@ -794,27 +794,32 @@ class SPAWNBackendTester:
 
     def run_priority_tests_only(self):
         """Run only the priority tests mentioned in the review request"""
-        print("🎯 Starting SPAWN Priority Tests (Review Request Focus)")
-        print("=" * 70)
+        print("🎯 Starting SPAWN Enhanced Wapiti Configuration Tests (Review Request Focus)")
+        print("=" * 80)
         
         # Test basic connectivity first
         if not self.test_root_endpoint():
             print("❌ Cannot connect to backend. Stopping tests.")
             return False
         
-        print("\n🎯 PRIORITY TEST 1: Scan Configuration Improvements")
-        print("Testing improved scan presets with domain scope, better depth/level, comprehensive modules")
+        print("\n🎯 PRIORITY TEST 1: Enhanced Scan Presets (Quick, Standard, Deep)")
+        print("Testing enhanced scan presets with increased depth (8-20), scan_force (normal/aggressive/insane),")
+        print("max_links_per_page (50-200), max_files_per_dir (30-100), and folder scope")
         self.test_scan_presets()
         
-        print("\n🎯 PRIORITY TEST 2: Export Functionality")
-        print("Testing all export formats (PDF, CSV, HTML, JSON) with existing scan results")
-        self.test_existing_scan_result()
+        print("\n🎯 PRIORITY TEST 2: Enhanced Wapiti Configuration Creation")
+        print("Testing scan configuration creation with enhanced parameters and Wapiti command generation")
+        self.test_enhanced_wapiti_configuration()
         
-        print("\n🎯 PRIORITY TEST 3: Authentic Vulnerability Detection")
-        print("Testing with vulnerable sites to verify vulnerabilities are detected")
-        print("🎯 PRIORITY TEST 4: Real-time Progress Tracking")
-        print("Verifying progress monitoring shows proper updates and phase information")
+        print("\n🎯 PRIORITY TEST 3: Enhanced Vulnerability Detection")
+        print("Testing enhanced deep scan against http://testphp.vulnweb.com/ to verify more vulnerabilities are detected")
+        print("🎯 PRIORITY TEST 4: Real-time Progress Tracking with Enhanced Parameters")
+        print("Verifying enhanced Wapiti commands execute properly with new parameters")
         self.test_vulnerable_site_scanning()
+        
+        print("\n🎯 ADDITIONAL TEST: Export Functionality Verification")
+        print("Testing export formats work with enhanced scan results")
+        self.test_existing_scan_result()
         
         # Print summary
         self.print_test_summary()
