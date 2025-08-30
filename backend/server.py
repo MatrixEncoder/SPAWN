@@ -1127,65 +1127,202 @@ async def export_to_pdf(result: dict, config: dict):
         )
 
 async def export_to_html(result: dict, config: dict):
-    """Export scan result to HTML"""
+    """Export scan result to HTML matching the professional report format"""
+    
+    # Calculate vulnerability counts
+    vulnerabilities = result.get("vulnerabilities", [])
+    vuln_count = len(vulnerabilities)
+    high_count = len([v for v in vulnerabilities if v.get("severity", "").lower() == "high"])
+    medium_count = len([v for v in vulnerabilities if v.get("severity", "").lower() == "medium"])
+    low_count = len([v for v in vulnerabilities if v.get("severity", "").lower() == "low"])
+    
+    # Format scan date
+    scan_date = result.get("started_at", "")
+    if scan_date:
+        try:
+            from datetime import datetime
+            if isinstance(scan_date, str):
+                if "T" in scan_date:
+                    dt = datetime.fromisoformat(scan_date.replace("Z", "+00:00"))
+                else:
+                    dt = datetime.strptime(scan_date[:19], "%Y-%m-%d %H:%M:%S")
+            else:
+                dt = scan_date
+            scan_date_formatted = dt.strftime("%Y-%m-%dT%H:%M:%S")
+        except:
+            scan_date_formatted = str(scan_date)[:19]
+    else:
+        scan_date_formatted = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    
     html_content = f"""
     <!DOCTYPE html>
     <html>
     <head>
-        <title>SPAWN Vulnerability Scan Report</title>
+        <title>SPAWN Professional Vulnerability Assessment Report</title>
         <style>
-            body {{ font-family: Arial, sans-serif; margin: 40px; }}
-            .header {{ text-align: center; margin-bottom: 30px; }}
+            body {{ font-family: Arial, sans-serif; margin: 40px; background-color: #f5f5f5; }}
+            .container {{ background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+            .header {{ text-align: center; margin-bottom: 40px; }}
             .info-table {{ width: 100%; border-collapse: collapse; margin-bottom: 30px; }}
-            .vuln-table {{ width: 100%; border-collapse: collapse; }}
-            th, td {{ border: 1px solid #ddd; padding: 12px; text-align: left; }}
-            th {{ background-color: #f2f2f2; }}
+            .dist-table {{ width: 60%; border-collapse: collapse; margin-bottom: 30px; }}
+            .vuln-table {{ width: 100%; border-collapse: collapse; margin-bottom: 30px; }}
+            .continuation-table {{ width: 100%; border-collapse: collapse; margin-bottom: 30px; }}
+            th, td {{ border: 1px solid #333; padding: 12px; text-align: left; }}
+            .info-table th {{ background-color: #d3d3d3; font-weight: bold; }}
+            .info-table td {{ background-color: white; }}
+            .dist-table th {{ background-color: #1e3a8a; color: white; font-weight: bold; }}
+            .dist-table td {{ background-color: white; }}
+            .vuln-table th {{ background-color: #1e3a8a; color: white; font-weight: bold; }}
+            .vuln-table td {{ background-color: white; }}
+            .continuation-table th {{ background-color: #f97316; color: white; font-weight: bold; }}
+            .continuation-table td {{ background-color: white; }}
             .severity-high {{ color: red; font-weight: bold; }}
             .severity-medium {{ color: orange; font-weight: bold; }}
             .severity-low {{ color: blue; }}
+            .section-title {{ color: #8b0000; font-size: 16px; font-weight: bold; margin: 30px 0 15px 0; }}
+            .footer {{ text-align: center; margin-top: 50px; font-size: 9px; color: #666; }}
         </style>
     </head>
     <body>
-        <div class="header">
-            <h1>SPAWN Vulnerability Scan Report</h1>
-        </div>
+        <div class="container">
         
-        <h2>Scan Information</h2>
-        <table class="info-table">
-            <tr><th>Scan Name</th><td>{config.get("name", "Unknown")}</td></tr>
-            <tr><th>Target URL</th><td>{config.get("target_url", "Unknown")}</td></tr>
-            <tr><th>Scan Date</th><td>{result.get("started_at", "")}</td></tr>
-            <tr><th>Status</th><td>{result.get("status", "Unknown")}</td></tr>
-            <tr><th>Total Vulnerabilities</th><td>{len(result.get("vulnerabilities", []))}</td></tr>
-        </table>
-        
-        <h2>Vulnerabilities</h2>
-        <table class="vuln-table">
-            <tr>
-                <th>Module</th>
-                <th>Severity</th>
-                <th>Title</th>
-                <th>URL</th>
-                <th>Parameter</th>
-                <th>Description</th>
-            </tr>
+            <!-- Header Information Table -->
+            <table class="info-table">
+                <tr><th>Target URL:</th><td>{config.get("target_url", "")}</td></tr>
+                <tr><th>Scan Date:</th><td>{scan_date_formatted}</td></tr>
+                <tr><th>Scan Status:</th><td>{result.get("status", "COMPLETED").upper()}</td></tr>
+                <tr><th>Total Vulnerabilities:</th><td>{vuln_count}</td></tr>
+                <tr><th>Scan Duration:</th><td>100% completed</td></tr>
+            </table>
+            
+            <div class="section-title">Vulnerability Distribution</div>
     """
     
-    for vuln in result.get("vulnerabilities", []):
-        severity_class = f"severity-{vuln.get('severity', 'low').lower()}"
-        html_content += f"""
-            <tr>
-                <td>{vuln.get("module", "")}</td>
-                <td class="{severity_class}">{vuln.get("severity", "").upper()}</td>
-                <td>{vuln.get("title", "")}</td>
-                <td>{vuln.get("url", "")}</td>
-                <td>{vuln.get("parameter", "")}</td>
-                <td>{vuln.get("description", "")}</td>
-            </tr>
+    # Add vulnerability distribution table
+    if vuln_count > 0:
+        html_content += """
+            <table class="dist-table">
+                <tr><th>Severity Level</th><th>Count</th><th>Risk Assessment</th></tr>
         """
+        
+        severity_data = [
+            ('HIGH', high_count, 'Critical - Address immediately'),
+            ('MEDIUM', medium_count, 'Should be addressed soon'),
+            ('LOW', low_count, 'Monitor and address when possible')
+        ]
+        
+        for severity, count, risk in severity_data:
+            if count > 0:
+                html_content += f"""
+                <tr><td>{severity}</td><td>{count}</td><td>{risk}</td></tr>
+                """
+        
+        html_content += "</table>"
     
-    html_content += """
-        </table>
+    # Detailed vulnerability findings
+    if vulnerabilities:
+        html_content += """
+            <div class="section-title">Detailed Vulnerability Findings</div>
+            <table class="vuln-table">
+                <tr>
+                    <th>#</th>
+                    <th>Type</th>
+                    <th>Severity</th>
+                    <th>URL</th>
+                    <th>Parameter</th>
+                    <th>Description</th>
+                    <th>CWE</th>
+                </tr>
+        """
+        
+        for i, vuln in enumerate(vulnerabilities, 1):
+            # Extract CWE
+            cwe = ""
+            description = vuln.get("description", "")
+            if "CWE-" in description:
+                import re
+                cwe_match = re.search(r'CWE-\d+', description)
+                if cwe_match:
+                    cwe = cwe_match.group()
+            else:
+                vuln_type = vuln.get("module", "").upper()
+                cwe_mapping = {
+                    'XSS': 'WSTG-INPV-07',
+                    'SQL': 'WSTG-ATHZ-01', 
+                    'CSRF': 'WSTG-SESS-05',
+                    'SSRF': 'WSTG-INPV-19',
+                    'PATH': 'WSTG-ATHZ-01',
+                    'REFLECTED': 'WSTG-INPV-01'
+                }
+                cwe = cwe_mapping.get(vuln_type, 'WSTG-ATHZ-01')
+            
+            # Format vulnerability type
+            vuln_type = vuln.get("module", "UNKNOWN").upper()
+            if "XSS" in vuln_type:
+                vuln_type = "XSS"
+            elif "SQL" in vuln_type:
+                vuln_type = "SQL INJECTION"
+            elif "CSRF" in vuln_type:
+                vuln_type = "CSRF"
+            elif "PATH" in vuln_type:
+                vuln_type = "PATH TRAVERSAL"
+            elif "REFLECTED" in vuln_type:
+                vuln_type = "REFLECTED CR"
+            
+            severity_class = f"severity-{vuln.get('severity', 'low').lower()}"
+            severity = vuln.get("severity", "medium").upper()
+            url = vuln.get("url", "")[:40] + ("..." if len(vuln.get("url", "")) > 40 else "")
+            parameter = vuln.get("parameter", "")
+            desc_short = description[:50] + ("..." if len(description) > 50 else "")
+            
+            html_content += f"""
+                <tr>
+                    <td>{i}</td>
+                    <td>{vuln_type}</td>
+                    <td class="{severity_class}">{severity}</td>
+                    <td>{url}</td>
+                    <td>{parameter}</td>
+                    <td>{desc_short}</td>
+                    <td>{cwe}</td>
+                </tr>
+            """
+        
+        html_content += "</table>"
+        
+        # Add continuation table if many vulnerabilities
+        if len(vulnerabilities) > 10:
+            html_content += """
+                <table class="continuation-table">
+                    <tr><th>Module</th><th>Title</th><th>URL</th><th>Parameter</th></tr>
+            """
+            
+            for vuln in vulnerabilities[10:]:
+                module = vuln.get("module", "").replace("_", " ").title()
+                if "Cross" in module or "xss" in module.lower():
+                    module = "Cross Site Requ"
+                elif "sql" in module.lower():
+                    module = "SQL Injection"
+                elif "reflected" in module.lower():
+                    module = "Reflected Cross"
+                
+                html_content += f"""
+                    <tr>
+                        <td>{module}</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>{vuln.get("parameter", "")}</td>
+                    </tr>
+                """
+            
+            html_content += "</table>"
+    
+    html_content += f"""
+            <div class="footer">
+                Generated by SPAWN - Professional Vulnerability Assessment Platform<br>
+                Report Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}<br>
+                © 2024 SPAWN Security Solutions - All Rights Reserved
+            </div>
+        </div>
     </body>
     </html>
     """
@@ -1193,7 +1330,7 @@ async def export_to_html(result: dict, config: dict):
     return StreamingResponse(
         iter([html_content.encode()]),
         media_type="text/html",
-        headers={"Content-Disposition": f"attachment; filename=scan_result_{result['id']}.html"}
+        headers={"Content-Disposition": f"attachment; filename=SPAWN_Security_Report_{result['id']}.html"}
     )
 
 # WebSocket endpoint for real-time updates
