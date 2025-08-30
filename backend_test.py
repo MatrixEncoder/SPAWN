@@ -569,6 +569,14 @@ class SPAWNBackendTester:
         # Test modules endpoint
         self.test_modules_endpoint()
         
+        # PRIORITY TEST 1: Test improved scan presets
+        print("\n🎯 PRIORITY TEST 1: Scan Configuration Improvements")
+        self.test_scan_presets()
+        
+        # PRIORITY TEST 2: Test existing scan result and export functionality
+        print("\n🎯 PRIORITY TEST 2: Export Functionality")
+        self.test_existing_scan_result()
+        
         # Test scan configuration management
         scan_id = self.test_create_scan_configuration()
         self.test_get_scan_configurations()
@@ -600,6 +608,39 @@ class SPAWNBackendTester:
         
         # Test error handling
         self.test_error_handling()
+        
+        # PRIORITY TEST 3 & 4: Test authentic vulnerability scanning and real-time progress
+        print("\n🎯 PRIORITY TEST 3 & 4: Authentic Vulnerability Detection & Real-time Progress")
+        self.test_vulnerable_site_scanning()
+        
+        # Print summary
+        self.print_test_summary()
+        
+        return self.get_overall_success()
+
+    def run_priority_tests_only(self):
+        """Run only the priority tests mentioned in the review request"""
+        print("🎯 Starting SPAWN Priority Tests (Review Request Focus)")
+        print("=" * 70)
+        
+        # Test basic connectivity first
+        if not self.test_root_endpoint():
+            print("❌ Cannot connect to backend. Stopping tests.")
+            return False
+        
+        print("\n🎯 PRIORITY TEST 1: Scan Configuration Improvements")
+        print("Testing improved scan presets with domain scope, better depth/level, comprehensive modules")
+        self.test_scan_presets()
+        
+        print("\n🎯 PRIORITY TEST 2: Export Functionality")
+        print("Testing all export formats (PDF, CSV, HTML, JSON) with existing scan results")
+        self.test_existing_scan_result()
+        
+        print("\n🎯 PRIORITY TEST 3: Authentic Vulnerability Detection")
+        print("Testing with vulnerable sites to verify vulnerabilities are detected")
+        print("🎯 PRIORITY TEST 4: Real-time Progress Tracking")
+        print("Verifying progress monitoring shows proper updates and phase information")
+        self.test_vulnerable_site_scanning()
         
         # Print summary
         self.print_test_summary()
