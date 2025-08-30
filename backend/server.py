@@ -369,6 +369,20 @@ async def run_wapiti_scan(scan_id: str, config: dict, result_id: str):
         if config.get("max_scan_time"):
             cmd.extend(["--max-scan-time", str(config["max_scan_time"])])
         
+        # Add enhanced scanning parameters for better vulnerability detection
+        if config.get("max_links_per_page"):
+            cmd.extend(["--max-links-per-page", str(config["max_links_per_page"])])
+        
+        if config.get("max_files_per_dir"):
+            cmd.extend(["--max-files-per-dir", str(config["max_files_per_dir"])])
+        
+        # Add scan force level for more aggressive scanning
+        if config.get("scan_force"):
+            cmd.extend(["-S", config["scan_force"]])
+        
+        # Add more concurrent tasks for faster scanning
+        cmd.extend(["--tasks", "8"])  # Increase concurrent tasks for better performance
+        
         # Add authentication if provided
         if config.get("auth_username") and config.get("auth_password"):
             if config.get("auth_method"):
