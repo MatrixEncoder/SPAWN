@@ -1,31 +1,51 @@
-FROM node:20-alpine
+# Multi-stage build for optimization
+FROM node:20-alpine AS base
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies (only what's needed)
-RUN apk add --no-cache python3 make g++
+# Install system dependencies
+RUN apk add --no-cache python3 make g++ curl
 
-# Copy package files for better caching
+# Copy package files
 COPY frontend/package.json frontend/yarn.lock* ./
 
-# Install dependencies with optimizations
-RUN yarn install --frozen-lockfile --network-timeout 300000 --cache-folder /tmp/yarn-cache && \
+# Install dependencies with aggressive optimizations
+RUN yarn install --frozen-lockfile --network-timeout 300000 --prefer-offline --cache-folder /tmp/yarn-cache && \
+    yarn cache clean && \
     rm -rf /tmp/yarn-cache
 
-# Copy rest of frontend code
+# Development stage (for docker-compose)
+FROM base AS development
+
+# Copy source code
 COPY frontend/ .
 
-# Build the application for production
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD curl -f http://localhost:3000 || exit 1
+
+# Start development server (faster than building)
+CMD ["yarn", "start"]
+
+# Production stage (optional)
+FROM base AS production
+
+# Copy source code  
+COPY frontend/ .
+
+# Build for production
 RUN yarn build
 
 # Expose port
 EXPOSE 3000
 
-# Health check with curl (lighter than wget)
-RUN apk add --no-cache curl
+# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:3000 || exit 1
 
-# Start the application
+# Start production server
 CMD ["yarn", "start"]
