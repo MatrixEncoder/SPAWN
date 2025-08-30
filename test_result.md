@@ -391,3 +391,7 @@ agent_communication:
     message: "Comprehensive backend testing completed. Fixed critical MongoDB ObjectId serialization issues and Wapiti path problems. All core functionality now working with 94.4% test success rate (17/18 tests passed). Only minor issue is scan stop functionality which behaves correctly but scans complete too quickly to test actual stopping."
   - agent: "main"
     message: "CRITICAL BUG FIXED: Resolved scan creation failure and missing modules issue. Root cause was missing Pillow dependency for PDF export causing backend startup failure. Backend now responding correctly: API endpoints working (modules: 33 available, scan-presets: 3 types available, scan creation: successful). Frontend should now display modules and allow scan creation properly."
+  - agent: "user"
+    message: "User reports multiple critical issues: 1) Wapiti not doing authentic scanning - tested with vulnerability website but shows 0 vulnerabilities, 2) Can't export to PDF and other formats, 3) Real-time progress not displaying, 4) UI is SHITTY"
+  - agent: "troubleshoot"
+    message: "Identified root causes: Wapiti configuration too restrictive (scope folder, shallow depth, limited modules), progress tracking relies on flawed stdout parsing with arbitrary increments, scan parameters prevent effective vulnerability detection. Need to: optimize Wapiti command parameters, rewrite progress monitoring, extend scan coverage and timeouts."
