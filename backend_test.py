@@ -228,7 +228,7 @@ class SPAWNBackendTester:
         return False
 
     def test_export_functionality(self, result_id: str):
-        """Test GET /api/results/{id}/export/{format} endpoints"""
+        """Test GET /api/results/{id}/export/{format} endpoints with enhanced professional report validation"""
         formats = ["json", "csv", "pdf", "html"]
         success_count = 0
         
@@ -277,6 +277,297 @@ class SPAWNBackendTester:
                 self.log_test(f"Export {format_type.upper()}", False, f"Request error: {str(e)}")
         
         return success_count == len(formats)
+
+    def test_professional_report_format(self, result_id: str):
+        """Test the new professional report format structure for PDF, HTML, and CSV exports"""
+        print("\n🎯 TESTING PROFESSIONAL REPORT FORMAT")
+        print("Validating new report structure with header table, vulnerability distribution, and detailed findings")
+        
+        # Test PDF Export Format
+        try:
+            response = self.session.get(f"{self.base_url}/results/{result_id}/export/pdf")
+            if response.status_code == 200:
+                content_type = response.headers.get('content-type', '')
+                content_length = len(response.content)
+                
+                if "application/pdf" in content_type and content_length > 5000:
+                    # Save PDF for manual inspection if needed
+                    with open("/tmp/test_report.pdf", "wb") as f:
+                        f.write(response.content)
+                    
+                    self.log_test("PDF Professional Format", True, 
+                        f"PDF report generated with professional format ({content_length} bytes)")
+                else:
+                    self.log_test("PDF Professional Format", False, 
+                        f"PDF format issues: content_type={content_type}, size={content_length}")
+            else:
+                self.log_test("PDF Professional Format", False, f"HTTP {response.status_code}")
+        except Exception as e:
+            self.log_test("PDF Professional Format", False, f"Error: {str(e)}")
+        
+        # Test HTML Export Format with content validation
+        try:
+            response = self.session.get(f"{self.base_url}/results/{result_id}/export/html")
+            if response.status_code == 200:
+                content = response.text
+                content_length = len(content)
+                
+                # Check for professional report structure elements
+                required_elements = [
+                    "Target URL:",
+                    "Scan Date:",
+                    "Scan Status:",
+                    "Total Vulnerabilities:",
+                    "Scan Duration:",
+                    "Vulnerability Distribution",
+                    "Detailed Vulnerability Findings",
+                    "SPAWN - Professional Vulnerability Assessment Platform"
+                ]
+                
+                missing_elements = []
+                for element in required_elements:
+                    if element not in content:
+                        missing_elements.append(element)
+                
+                if not missing_elements and content_length > 1000:
+                    self.log_test("HTML Professional Format", True, 
+                        f"HTML report contains all professional format elements ({content_length} chars)")
+                    
+                    # Check for proper table structure
+                    table_checks = [
+                        'class="info-table"',
+                        'class="dist-table"', 
+                        'class="vuln-table"',
+                        'Severity Level',
+                        'Risk Assessment'
+                    ]
+                    
+                    table_elements_found = sum(1 for check in table_checks if check in content)
+                    if table_elements_found >= 4:
+                        self.log_test("HTML Table Structure", True, 
+                            f"HTML contains proper table structure ({table_elements_found}/{len(table_checks)} elements)")
+                    else:
+                        self.log_test("HTML Table Structure", False, 
+                            f"Missing table elements ({table_elements_found}/{len(table_checks)} found)")
+                else:
+                    self.log_test("HTML Professional Format", False, 
+                        f"Missing elements: {missing_elements}, size: {content_length}")
+            else:
+                self.log_test("HTML Professional Format", False, f"HTTP {response.status_code}")
+        except Exception as e:
+            self.log_test("HTML Professional Format", False, f"Error: {str(e)}")
+        
+        # Test CSV Export Format with content validation
+        try:
+            response = self.session.get(f"{self.base_url}/results/{result_id}/export/csv")
+            if response.status_code == 200:
+                content = response.text
+                content_length = len(content)
+                
+                # Check for professional CSV structure
+                required_csv_elements = [
+                    "SPAWN Professional Vulnerability Assessment Report",
+                    "Header Information",
+                    "Target URL",
+                    "Scan Date",
+                    "Total Vulnerabilities",
+                    "Vulnerability Distribution",
+                    "Detailed Vulnerability Findings",
+                    "#,Type,Severity,URL,Parameter,Description,CWE"
+                ]
+                
+                missing_csv_elements = []
+                for element in required_csv_elements:
+                    if element not in content:
+                        missing_csv_elements.append(element)
+                
+                if not missing_csv_elements and content_length > 500:
+                    self.log_test("CSV Professional Format", True, 
+                        f"CSV report contains all professional format elements ({content_length} chars)")
+                else:
+                    self.log_test("CSV Professional Format", False, 
+                        f"Missing CSV elements: {missing_csv_elements}, size: {content_length}")
+            else:
+                self.log_test("CSV Professional Format", False, f"HTTP {response.status_code}")
+        except Exception as e:
+            self.log_test("CSV Professional Format", False, f"Error: {str(e)}")
+
+    def test_cwe_mappings_and_vulnerability_types(self, result_id: str):
+        """Test CWE mappings and vulnerability type formatting in reports"""
+        print("\n🎯 TESTING CWE MAPPINGS AND VULNERABILITY TYPES")
+        
+        try:
+            # Get the scan result first to check vulnerabilities
+            response = self.session.get(f"{self.base_url}/results/{result_id}")
+            if response.status_code == 200:
+                result_data = response.json()
+                vulnerabilities = result_data.get("vulnerabilities", [])
+                
+                if not vulnerabilities:
+                    self.log_test("CWE Mappings Test", False, "No vulnerabilities found in result to test CWE mappings")
+                    return False
+                
+                # Test HTML export for CWE mappings
+                html_response = self.session.get(f"{self.base_url}/results/{result_id}/export/html")
+                if html_response.status_code == 200:
+                    html_content = html_response.text
+                    
+                    # Check for CWE/WSTG references
+                    cwe_patterns = ["CWE-", "WSTG-"]
+                    cwe_found = any(pattern in html_content for pattern in cwe_patterns)
+                    
+                    # Check for properly formatted vulnerability types
+                    vuln_type_patterns = ["XSS", "SQL INJECTION", "CSRF", "PATH TRAVERSAL"]
+                    vuln_types_found = sum(1 for pattern in vuln_type_patterns if pattern in html_content)
+                    
+                    if cwe_found:
+                        self.log_test("CWE Mappings in HTML", True, 
+                            f"CWE/WSTG references found in HTML report")
+                    else:
+                        self.log_test("CWE Mappings in HTML", False, 
+                            "No CWE/WSTG references found in HTML report")
+                    
+                    if vuln_types_found > 0:
+                        self.log_test("Vulnerability Type Formatting", True, 
+                            f"Found {vuln_types_found} properly formatted vulnerability types")
+                    else:
+                        self.log_test("Vulnerability Type Formatting", False, 
+                            "No properly formatted vulnerability types found")
+                
+                # Test CSV export for CWE mappings
+                csv_response = self.session.get(f"{self.base_url}/results/{result_id}/export/csv")
+                if csv_response.status_code == 200:
+                    csv_content = csv_response.text
+                    
+                    # Check for CWE column and data
+                    cwe_column_present = "CWE" in csv_content
+                    cwe_data_present = any(pattern in csv_content for pattern in ["CWE-", "WSTG-"])
+                    
+                    if cwe_column_present and cwe_data_present:
+                        self.log_test("CWE Mappings in CSV", True, 
+                            "CWE column and data properly included in CSV report")
+                    else:
+                        self.log_test("CWE Mappings in CSV", False, 
+                            f"CWE issues - column: {cwe_column_present}, data: {cwe_data_present}")
+                
+                return True
+            else:
+                self.log_test("CWE Mappings Test", False, f"Cannot retrieve result: HTTP {response.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test("CWE Mappings Test", False, f"Error: {str(e)}")
+            return False
+
+    def test_report_content_quality(self, result_id: str):
+        """Test report content quality including data completeness and formatting"""
+        print("\n🎯 TESTING REPORT CONTENT QUALITY")
+        
+        try:
+            # Get scan result and configuration
+            result_response = self.session.get(f"{self.base_url}/results/{result_id}")
+            if result_response.status_code != 200:
+                self.log_test("Report Content Quality", False, "Cannot retrieve scan result")
+                return False
+            
+            result_data = result_response.json()
+            vulnerabilities = result_data.get("vulnerabilities", [])
+            scan_id = result_data.get("scan_id")
+            
+            # Get scan configuration
+            config_response = self.session.get(f"{self.base_url}/scans/{scan_id}")
+            config_data = config_response.json() if config_response.status_code == 200 else {}
+            
+            # Test HTML report content quality
+            html_response = self.session.get(f"{self.base_url}/results/{result_id}/export/html")
+            if html_response.status_code == 200:
+                html_content = html_response.text
+                
+                # Check header information completeness
+                header_fields = [
+                    config_data.get("target_url", ""),
+                    result_data.get("status", "").upper(),
+                    str(len(vulnerabilities))
+                ]
+                
+                header_complete = all(field in html_content for field in header_fields if field)
+                
+                if header_complete:
+                    self.log_test("Report Header Completeness", True, 
+                        "All header information properly populated")
+                else:
+                    self.log_test("Report Header Completeness", False, 
+                        "Missing header information in report")
+                
+                # Check vulnerability distribution section
+                if vulnerabilities:
+                    severity_counts = {}
+                    for vuln in vulnerabilities:
+                        severity = vuln.get("severity", "unknown").upper()
+                        severity_counts[severity] = severity_counts.get(severity, 0) + 1
+                    
+                    # Check if severity counts are reflected in report
+                    severity_section_complete = True
+                    for severity, count in severity_counts.items():
+                        if severity in ["HIGH", "MEDIUM", "LOW"] and count > 0:
+                            if str(count) not in html_content:
+                                severity_section_complete = False
+                                break
+                    
+                    if severity_section_complete:
+                        self.log_test("Vulnerability Distribution Accuracy", True, 
+                            f"Severity counts accurately reflected: {severity_counts}")
+                    else:
+                        self.log_test("Vulnerability Distribution Accuracy", False, 
+                            f"Severity counts not properly reflected: {severity_counts}")
+                
+                # Check detailed findings table
+                if vulnerabilities:
+                    # Check if vulnerability details are present
+                    vuln_details_present = True
+                    for vuln in vulnerabilities[:3]:  # Check first 3 vulnerabilities
+                        vuln_url = vuln.get("url", "")
+                        vuln_severity = vuln.get("severity", "").upper()
+                        
+                        if vuln_url and vuln_url not in html_content:
+                            vuln_details_present = False
+                            break
+                        if vuln_severity and vuln_severity not in html_content:
+                            vuln_details_present = False
+                            break
+                    
+                    if vuln_details_present:
+                        self.log_test("Detailed Findings Completeness", True, 
+                            "Vulnerability details properly included in findings table")
+                    else:
+                        self.log_test("Detailed Findings Completeness", False, 
+                            "Vulnerability details missing from findings table")
+                
+                # Check continuation table for many vulnerabilities
+                if len(vulnerabilities) > 10:
+                    continuation_present = "continuation-table" in html_content or "Additional" in html_content
+                    if continuation_present:
+                        self.log_test("Continuation Table", True, 
+                            f"Continuation table present for {len(vulnerabilities)} vulnerabilities")
+                    else:
+                        self.log_test("Continuation Table", False, 
+                            f"Continuation table missing for {len(vulnerabilities)} vulnerabilities")
+                
+                # Check SPAWN branding
+                branding_present = "SPAWN" in html_content and "Professional Vulnerability Assessment" in html_content
+                if branding_present:
+                    self.log_test("SPAWN Branding", True, "SPAWN branding properly included")
+                else:
+                    self.log_test("SPAWN Branding", False, "SPAWN branding missing or incomplete")
+                
+                return True
+            else:
+                self.log_test("Report Content Quality", False, f"Cannot retrieve HTML report: HTTP {html_response.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Report Content Quality", False, f"Error: {str(e)}")
+            return False
 
     def test_scan_presets(self):
         """Test GET /api/scan-presets endpoint for enhanced Wapiti configurations"""
