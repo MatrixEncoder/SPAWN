@@ -217,7 +217,8 @@ async def create_scan_configuration(config: ScanConfigurationCreate):
             "depth": config.depth or preset["depth"],
             "level": config.level or preset["level"],
             "timeout": config.timeout or preset["timeout"],
-            "max_scan_time": config.max_scan_time or preset.get("max_scan_time")
+            "max_scan_time": config.max_scan_time or preset.get("max_scan_time"),
+            "scope": preset.get("scope", "folder")
         }
     
     scan_config = ScanConfiguration(**{**config.dict(), **preset_config})
