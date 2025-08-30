@@ -680,80 +680,201 @@ async def export_to_csv(result: dict, config: dict):
         headers={"Content-Disposition": f"attachment; filename=scan_result_{result['id']}.csv"}
     )
 
+def _calculate_duration(result):
+    """Calculate scan duration"""
+    if result.get("started_at") and result.get("completed_at"):
+        start = datetime.fromisoformat(result["started_at"].replace('Z', '+00:00'))
+        end = datetime.fromisoformat(result["completed_at"].replace('Z', '+00:00'))
+        duration = end - start
+        return str(duration).split('.')[0]  # Remove microseconds
+    return "N/A"
+
 async def export_to_pdf(result: dict, config: dict):
-    """Export scan result to PDF"""
+    """Export scan result to enhanced PDF with SPAWN branding"""
     # Create temporary PDF file
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
         doc = SimpleDocTemplate(tmp_file.name, pagesize=A4)
         styles = getSampleStyleSheet()
         story = []
         
-        # Title
+        # Download SPAWN logo
+        logo_path = None
+        try:
+            logo_response = requests.get(SPAWN_LOGO_URL, timeout=10)
+            if logo_response.status_code == 200:
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as logo_file:
+                    logo_file.write(logo_response.content)
+                    logo_path = logo_file.name
+        except:
+            pass  # Continue without logo if download fails
+        
+        # Header with SPAWN branding
+        if logo_path:
+            try:
+                logo = Image(logo_path, width=2*inch, height=1*inch)
+                story.append(logo)
+                story.append(Spacer(1, 12))
+            except:
+                pass
+        
+        # Title with enhanced styling
         title_style = ParagraphStyle(
             'CustomTitle',
             parent=styles['Heading1'],
-            fontSize=24,
+            fontSize=28,
             spaceAfter=30,
-            alignment=1  # Center alignment
+            alignment=TA_CENTER,
+            textColor=colors.darkred,
+            fontName='Helvetica-Bold'
         )
-        story.append(Paragraph("SPAWN Vulnerability Scan Report", title_style))
-        story.append(Spacer(1, 12))
+        story.append(Paragraph("SPAWN Vulnerability Assessment Report", title_style))
         
-        # Scan Information
+        # Subtitle
+        subtitle_style = ParagraphStyle(
+            'Subtitle',
+            parent=styles['Normal'],
+            fontSize=14,
+            spaceAfter=20,
+            alignment=TA_CENTER,
+            textColor=colors.grey,
+            fontStyle='italic'
+        )
+        story.append(Paragraph("Professional Security Analysis Report", subtitle_style))
+        story.append(Spacer(1, 30))
+        
+        # Executive Summary Box
+        exec_summary = []
+        exec_summary.append(Paragraph("<b>EXECUTIVE SUMMARY</b>", styles['Heading2']))
+        
+        vuln_count = len(result.get("vulnerabilities", []))
+        high_count = len([v for v in result.get("vulnerabilities", []) if v.get("severity") == "high"])
+        medium_count = len([v for v in result.get("vulnerabilities", []) if v.get("severity") == "medium"])
+        low_count = len([v for v in result.get("vulnerabilities", []) if v.get("severity") == "low"])
+        
+        risk_level = "HIGH" if high_count > 0 else "MEDIUM" if medium_count > 0 else "LOW" if low_count > 0 else "MINIMAL"
+        risk_color = colors.red if risk_level == "HIGH" else colors.orange if risk_level == "MEDIUM" else colors.blue
+        
+        exec_summary.append(Paragraph(f"<b>Overall Risk Level: </b><font color='{risk_color}'>{risk_level}</font>", styles['Normal']))
+        exec_summary.append(Paragraph(f"<b>Total Vulnerabilities Found: </b>{vuln_count}", styles['Normal']))
+        exec_summary.append(Paragraph(f"<b>Critical/High: </b>{high_count} | <b>Medium: </b>{medium_count} | <b>Low: </b>{low_count}", styles['Normal']))
+        
+        for item in exec_summary:
+            story.append(item)
+        
+        story.append(Spacer(1, 30))
+        
+        # Scan Information Table with enhanced styling
+        story.append(Paragraph("SCAN INFORMATION", styles['Heading2']))
         info_data = [
             ['Scan Name:', config.get("name", "Unknown")],
             ['Target URL:', config.get("target_url", "Unknown")],
-            ['Scan Date:', result.get("started_at", "")],
-            ['Status:', result.get("status", "Unknown")],
+            ['Scan Type:', config.get("scan_type", "standard").upper()],
+            ['Scan Date:', str(result.get("started_at", ""))[:19]],
+            ['Status:', result.get("status", "Unknown").upper()],
+            ['Duration:', _calculate_duration(result)],
+            ['Modules Used:', ', '.join(config.get("modules", []))[:50] + ('...' if len(', '.join(config.get("modules", []))) > 50 else '')]
         ]
         
-        info_table = Table(info_data)
+        info_table = Table(info_data, colWidths=[2*inch, 4*inch])
         info_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+            ('TEXTCOLOR', (0, 0), (0, -1), colors.black),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 14),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BACKGROUND', (1, 0), (1, -1), colors.white),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
         ]))
         story.append(info_table)
-        story.append(Spacer(1, 24))
+        story.append(Spacer(1, 30))
         
-        # Vulnerabilities
+        # Vulnerabilities Section
         if result.get("vulnerabilities"):
-            story.append(Paragraph("Vulnerabilities Found", styles['Heading2']))
+            story.append(Paragraph("VULNERABILITIES DETAILS", styles['Heading2']))
             story.append(Spacer(1, 12))
             
-            vuln_data = [['Module', 'Severity', 'Title', 'URL']]
-            for vuln in result["vulnerabilities"][:20]:  # Limit to first 20
-                vuln_data.append([
-                    vuln.get("module", "")[:15],
-                    vuln.get("severity", ""),
-                    vuln.get("title", "")[:30],
-                    vuln.get("url", "")[:40]
-                ])
+            # Group vulnerabilities by severity
+            vuln_by_severity = {"high": [], "medium": [], "low": [], "info": []}
+            for vuln in result["vulnerabilities"]:
+                severity = vuln.get("severity", "info").lower()
+                if severity in vuln_by_severity:
+                    vuln_by_severity[severity].append(vuln)
             
-            vuln_table = Table(vuln_data)
-            vuln_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, 0), 10),
-                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                ('GRID', (0, 0), (-1, -1), 1, colors.black)
-            ]))
-            story.append(vuln_table)
+            # Display vulnerabilities by severity
+            for severity, vulns in vuln_by_severity.items():
+                if vulns:
+                    severity_color = {
+                        "high": colors.red,
+                        "medium": colors.orange, 
+                        "low": colors.blue,
+                        "info": colors.grey
+                    }[severity]
+                    
+                    severity_style = ParagraphStyle(
+                        f'{severity}Header',
+                        parent=styles['Heading3'],
+                        textColor=severity_color,
+                        fontSize=14,
+                        spaceAfter=10
+                    )
+                    story.append(Paragraph(f"{severity.upper()} SEVERITY ({len(vulns)} issues)", severity_style))
+                    
+                    vuln_data = [['Module', 'Title', 'URL', 'Parameter']]
+                    for vuln in vulns[:10]:  # Limit to first 10 per severity
+                        vuln_data.append([
+                            vuln.get("module", "")[:15],
+                            vuln.get("title", "")[:40],
+                            vuln.get("url", "")[:35],
+                            vuln.get("parameter", "")[:20]
+                        ])
+                    
+                    vuln_table = Table(vuln_data, colWidths=[1*inch, 2.5*inch, 2*inch, 1*inch])
+                    vuln_table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, 0), (-1, 0), severity_color),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                        ('FONTSIZE', (0, 0), (-1, 0), 9),
+                        ('FONTSIZE', (0, 1), (-1, -1), 8),
+                        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                        ('TOPPADDING', (0, 0), (-1, -1), 6),
+                        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                        ('VALIGN', (0, 0), (-1, -1), 'TOP')
+                    ]))
+                    story.append(vuln_table)
+                    story.append(Spacer(1, 20))
         
+        # Footer with SPAWN branding
+        story.append(Spacer(1, 50))
+        footer_style = ParagraphStyle(
+            'Footer',
+            parent=styles['Normal'],
+            fontSize=8,
+            alignment=TA_CENTER,
+            textColor=colors.grey
+        )
+        
+        story.append(Paragraph("Generated by SPAWN - Professional Vulnerability Assessment Platform", footer_style))
+        story.append(Paragraph(f"Report Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", footer_style))
+        story.append(Paragraph("© 2024 SPAWN Security Solutions - All Rights Reserved", footer_style))
+        
+        # Build the PDF
         doc.build(story)
+        
+        # Clean up logo file if downloaded
+        if logo_path and os.path.exists(logo_path):
+            os.unlink(logo_path)
         
         return FileResponse(
             tmp_file.name,
             media_type="application/pdf",
-            filename=f"scan_result_{result['id']}.pdf"
+            filename=f"SPAWN_Security_Report_{result['id']}.pdf"
         )
 
 async def export_to_html(result: dict, config: dict):
