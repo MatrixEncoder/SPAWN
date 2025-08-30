@@ -229,7 +229,10 @@ async def create_scan_configuration(config: ScanConfigurationCreate):
             "level": config.level or preset["level"],
             "timeout": config.timeout or preset["timeout"],
             "max_scan_time": config.max_scan_time or preset.get("max_scan_time"),
-            "scope": preset.get("scope", "folder")
+            "scope": preset.get("scope", "folder"),
+            "max_links_per_page": preset.get("max_links_per_page", 20),
+            "max_files_per_dir": preset.get("max_files_per_dir", 10),
+            "scan_force": preset.get("scan_force", "normal")
         }
     
     scan_config = ScanConfiguration(**{**config.dict(), **preset_config})
