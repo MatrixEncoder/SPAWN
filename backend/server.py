@@ -180,7 +180,7 @@ async def get_scan_configuration(scan_id: str):
 @api_router.post("/scans/{scan_id}/start")
 async def start_scan(scan_id: str, background_tasks: BackgroundTasks):
     """Start a vulnerability scan"""
-    config = await db.scan_configurations.find_one({"id": scan_id})
+    config = await db.scan_configurations.find_one({"id": scan_id}, {"_id": 0})
     if not config:
         raise HTTPException(status_code=404, detail="Scan configuration not found")
     
