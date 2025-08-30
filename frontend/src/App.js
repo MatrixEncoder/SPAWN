@@ -555,10 +555,19 @@ const ResultsList = ({ results, onRefresh }) => {
                 <div className="flex items-center space-x-4 mt-2">
                   <StatusBadge status={result.status} />
                   <span className="text-gray-300">{result.vulnerabilities?.length || 0} vulnerabilities found</span>
-                  {result.progress !== undefined && result.status === 'running' && (
-                    <div className="flex items-center space-x-2">
-                      <span className="text-blue-400 text-sm">{result.progress}%</span>
-                      <ProgressBar progress={result.progress} status={result.status} />
+                  {result.status === 'running' && (
+                    <div className="flex items-center space-x-4">
+                      <span className="text-blue-400 text-sm font-medium">
+                        {result.progress || 0}%
+                      </span>
+                      {realtimeUpdates[result.id] && (
+                        <span className="text-green-400 text-xs">
+                          {realtimeUpdates[result.id].phase || 'Processing...'}
+                        </span>
+                      )}
+                      <div className="w-32">
+                        <ProgressBar progress={result.progress || 0} status={result.status} />
+                      </div>
                     </div>
                   )}
                 </div>
