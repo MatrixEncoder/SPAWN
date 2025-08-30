@@ -658,32 +658,48 @@ async def monitor_scan_progress_realtime(scan_id: str, result_id: str, process, 
                         if content.strip():  # Check if file has content
                             report_data = json.loads(content)
                         
-                            # Extract vulnerabilities with improved parsing
+                            # Extract vulnerabilities with correct Wapiti JSON parsing
                             if "vulnerabilities" in report_data:
                                 for vuln_type, vulns in report_data["vulnerabilities"].items():
-                                    if isinstance(vulns, list):
+                                    if isinstance(vulns, list) and len(vulns) > 0:
                                         for vuln in vulns:
-                                            # Convert severity to string and map numeric values
-                                            severity_raw = vuln.get("level", vuln.get("severity", "medium"))
+                                            # Map Wapiti numeric severity levels to strings
+                                            severity_raw = vuln.get("level", 2)
                                             if isinstance(severity_raw, int):
-                                                # Map Wapiti numeric severity levels to strings
-                                                severity_map = {0: "info", 1: "low", 2: "medium", 3: "high"}
+                                                # Wapiti severity mapping: 1=low, 2=medium, 3=high, 4=critical
+                                                severity_map = {1: "low", 2: "medium", 3: "high", 4: "critical"}
                                                 severity = severity_map.get(severity_raw, "medium")
                                             else:
                                                 severity = str(severity_raw).lower()
+                                            
+                                            # Build proper URL from path
+                                            target_base = report_data.get("infos", {}).get("target", "")
+                                            vuln_path = vuln.get("path", "")
+                                            if target_base and vuln_path:
+                                                if vuln_path.startswith("/"):
+                                                    vuln_url = target_base.rstrip("/") + vuln_path
+                                                else:
+                                                    vuln_url = target_base.rstrip("/") + "/" + vuln_path
+                                            else:
+                                                vuln_url = vuln.get("url", target_base)
+                                            
+                                            # Create properly formatted vulnerability title
+                                            vuln_title = vuln.get("info", vuln_type)
+                                            if vuln.get("parameter"):
+                                                vuln_title += f" (Parameter: {vuln.get('parameter')})"
                                             
                                             vulnerability = Vulnerability(
                                                 scan_id=scan_id,
                                                 module=vuln_type,
                                                 severity=severity,
-                                                title=vuln.get("title", vuln.get("name", "Vulnerability Found")),
-                                                description=vuln.get("description", vuln.get("detail", "")),
-                                                url=vuln.get("url", vuln.get("target", "")),
-                                                parameter=vuln.get("parameter", vuln.get("param", "")),
+                                                title=vuln_title,
+                                                description=vuln.get("info", f"{vuln_type} vulnerability detected"),
+                                                url=vuln_url,
+                                                parameter=vuln.get("parameter", ""),
                                                 method=vuln.get("method", "GET"),
-                                                attack_payload=vuln.get("payload", vuln.get("attack", "")),
+                                                attack_payload=vuln.get("http_request", ""),
                                                 curl_command=vuln.get("curl_command", ""),
-                                                references=vuln.get("references", vuln.get("refs", []))
+                                                references=vuln.get("wstg", [])
                                             )
                                             vulnerabilities.append(vulnerability.dict())
                                             await db.vulnerabilities.insert_one(vulnerability.dict())
