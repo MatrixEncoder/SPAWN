@@ -1,0 +1,15 @@
+# Fast development override - use with: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+services:
+  frontend:
+    build:
+      dockerfile: Dockerfile.frontend.dev
+    environment:
+      - FAST_REFRESH=false
+      - GENERATE_SOURCEMAP=false
+    command: ["yarn", "start"]
+  
+  backend:
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    command: ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]
