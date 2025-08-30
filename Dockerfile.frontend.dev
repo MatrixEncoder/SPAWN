@@ -1,0 +1,26 @@
+# Fast development Dockerfile for quick testing
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install minimal system dependencies
+RUN apk add --no-cache curl
+
+# Copy package files
+COPY frontend/package.json frontend/yarn.lock* ./
+
+# Install dependencies quickly (skip optional dependencies)
+RUN yarn install --production=false --frozen-lockfile --skip-optional --network-timeout 60000
+
+# Copy source
+COPY frontend/ .
+
+# Expose port
+EXPOSE 3000
+
+# Simple health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=2 \
+    CMD curl -f http://localhost:3000 || exit 1
+
+# Start without building (fastest)
+CMD ["yarn", "start"]
