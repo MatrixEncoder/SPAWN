@@ -143,7 +143,40 @@ class Vulnerability(BaseModel):
 # Global dictionary to store running scans
 active_scans = {}
 
-# Available Wapiti modules
+# Scan type presets
+SCAN_PRESETS = {
+    "quick": {
+        "modules": ["exec", "file", "sql", "xss"],
+        "depth": 2,
+        "level": 1,
+        "timeout": 15,
+        "max_scan_time": 300,  # 5 minutes
+        "description": "Quick scan for basic vulnerabilities"
+    },
+    "standard": {
+        "modules": ["exec", "file", "sql", "xss", "csrf", "ssrf", "upload"],
+        "depth": 5,
+        "level": 1,
+        "timeout": 30,
+        "max_scan_time": 1800,  # 30 minutes
+        "description": "Standard comprehensive scan"
+    },
+    "deep": {
+        "modules": ["backup", "brute_login_form", "buster", "cms", "cookieflags", "crlf", "csp",
+                   "csrf", "exec", "file", "htaccess", "htp", "http_headers", "https_redirect",
+                   "ldap", "log4shell", "methods", "network_device", "nikto", "permanentxss",
+                   "redirect", "shellshock", "spring4shell", "sql", "ssl", "ssrf", "takeover",
+                   "timesql", "upload", "wapp", "wp_enum", "xss", "xxe"],
+        "depth": 8,
+        "level": 2,
+        "timeout": 60,
+        "max_scan_time": 7200,  # 2 hours
+        "description": "Deep comprehensive scan with all modules"
+    }
+}
+
+# SPAWN logo URL for branding
+SPAWN_LOGO_URL = "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/aeca6b42-3cb4-4fb4-b322-92f9e6232ef6/d30qkeo-a177eb43-802e-4a1a-b80f-01bf31f18df3.jpg?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcL2FlY2E2YjQyLTNjYjQtNGZiNC1iMzIyLTkyZjllNjIzMmVmNlwvZDMwcWtlby1hMTc3ZWI0My04MDJlLTRhMWEtYjgwZi0wMWJmMzFmMThkZjMuanBnIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.C1tBOjVlRC8CZhNlYCZH00xtXf6j-8mHOTeFWgN0yBE"
 WAPITI_MODULES = [
     "backup", "brute_login_form", "buster", "cms", "cookieflags", "crlf", "csp",
     "csrf", "exec", "file", "htaccess", "htp", "http_headers", "https_redirect",
