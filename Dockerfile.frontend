@@ -3,11 +3,14 @@ FROM node:20-alpine
 # Set working directory
 WORKDIR /app
 
+# Install system dependencies
+RUN apk add --no-cache python3 make g++
+
 # Copy package files first for better Docker layer caching
-COPY frontend/package.json frontend/yarn.lock* ./
+COPY frontend/package.json frontend/yarn.lock ./
 
 # Install dependencies
-RUN yarn install --frozen-lockfile
+RUN yarn install --frozen-lockfile --network-timeout 1000000
 
 # Copy frontend code
 COPY frontend/ .
