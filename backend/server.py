@@ -629,10 +629,19 @@ async def monitor_scan_progress_realtime(scan_id: str, result_id: str, process, 
                                 for vuln_type, vulns in report_data["vulnerabilities"].items():
                                     if isinstance(vulns, list):
                                         for vuln in vulns:
+                                            # Convert severity to string and map numeric values
+                                            severity_raw = vuln.get("level", vuln.get("severity", "medium"))
+                                            if isinstance(severity_raw, int):
+                                                # Map Wapiti numeric severity levels to strings
+                                                severity_map = {0: "info", 1: "low", 2: "medium", 3: "high"}
+                                                severity = severity_map.get(severity_raw, "medium")
+                                            else:
+                                                severity = str(severity_raw).lower()
+                                            
                                             vulnerability = Vulnerability(
                                                 scan_id=scan_id,
                                                 module=vuln_type,
-                                                severity=vuln.get("level", vuln.get("severity", "medium")),
+                                                severity=severity,
                                                 title=vuln.get("title", vuln.get("name", "Vulnerability Found")),
                                                 description=vuln.get("description", vuln.get("detail", "")),
                                                 url=vuln.get("url", vuln.get("target", "")),
