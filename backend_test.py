@@ -908,6 +908,12 @@ class SPAWNBackendTester:
                 # Test export functionality with existing result
                 if status == "completed":
                     self.test_export_functionality(result_id)
+                    # Test new professional report format
+                    self.test_professional_report_format(result_id)
+                    # Test CWE mappings and vulnerability types
+                    self.test_cwe_mappings_and_vulnerability_types(result_id)
+                    # Test report content quality
+                    self.test_report_content_quality(result_id)
                     return True
                 else:
                     self.log_test("Existing Scan Status", False, f"Existing scan not completed: {status}")
