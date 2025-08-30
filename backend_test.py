@@ -467,29 +467,59 @@ class SPAWNBackendTester:
         return False
 
     def test_vulnerable_site_scanning(self):
-        """Test scanning against a known vulnerable site to verify authentic vulnerability detection"""
+        """Test scanning against known vulnerable sites with enhanced Wapiti configuration"""
         try:
-            # Create scan configuration for vulnerable test site
+            # Test with the specific vulnerable site mentioned in review request
             vulnerable_sites = [
-                "http://testphp.vulnweb.com/",
-                "http://demo.testfire.net/",
-                "https://xss-game.appspot.com/"
+                {
+                    "url": "http://testphp.vulnweb.com/",
+                    "scan_type": "deep",
+                    "expected_vulns": 5  # Should find multiple vulnerabilities with enhanced config
+                },
+                {
+                    "url": "http://demo.testfire.net/",
+                    "scan_type": "standard", 
+                    "expected_vulns": 3
+                }
             ]
             
-            for site_url in vulnerable_sites:
+            for site_info in vulnerable_sites:
+                site_url = site_info["url"]
+                scan_type = site_info["scan_type"]
+                expected_vulns = site_info["expected_vulns"]
+                
                 try:
-                    scan_config = {
-                        "name": f"Vulnerability Test - {site_url}",
-                        "target_url": site_url,
-                        "scan_type": "quick",  # Use improved quick scan
-                        "scope": "domain",
-                        "modules": ["exec", "file", "sql", "xss", "csrf", "ssrf"],
-                        "depth": 3,
-                        "level": 2,
-                        "timeout": 45,
-                        "max_scan_time": 300,  # 5 minutes max
-                        "verify_ssl": False  # Some test sites have SSL issues
-                    }
+                    # Use enhanced configuration based on scan type
+                    if scan_type == "deep":
+                        scan_config = {
+                            "name": f"Enhanced Deep Vulnerability Test - {site_url}",
+                            "target_url": site_url,
+                            "scan_type": "deep",
+                            "scope": "folder",  # Enhanced: folder instead of domain for broader coverage
+                            "depth": 20,        # Enhanced: maximum depth
+                            "level": 3,         # Enhanced: maximum level
+                            "timeout": 120,     # Enhanced: longer timeout
+                            "max_scan_time": 1800,  # 30 minutes for thorough scanning
+                            "max_links_per_page": 200,  # Enhanced: maximum links per page
+                            "max_files_per_dir": 100,   # Enhanced: maximum files per directory
+                            "scan_force": "insane",     # Enhanced: maximum scanning intensity
+                            "verify_ssl": False
+                        }
+                    else:
+                        scan_config = {
+                            "name": f"Enhanced Standard Vulnerability Test - {site_url}",
+                            "target_url": site_url,
+                            "scan_type": "standard",
+                            "scope": "folder",  # Enhanced: folder scope
+                            "depth": 12,        # Enhanced: increased depth
+                            "level": 2,
+                            "timeout": 90,      # Enhanced: longer timeout
+                            "max_scan_time": 900,  # 15 minutes
+                            "max_links_per_page": 100,  # Enhanced: more links per page
+                            "max_files_per_dir": 50,    # Enhanced: more files per directory
+                            "scan_force": "aggressive", # Enhanced: aggressive scanning
+                            "verify_ssl": False
+                        }
                     
                     # Create scan configuration
                     response = self.session.post(
