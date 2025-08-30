@@ -511,7 +511,7 @@ const ScanList = ({ scans, onRefresh }) => {
   );
 };
 
-const ResultsList = ({ results, onRefresh }) => {
+const ResultsList = ({ results, onRefresh, realtimeUpdates }) => {
   const [selectedResult, setSelectedResult] = useState(null);
   const [selectedVuln, setSelectedVuln] = useState(null);
 
