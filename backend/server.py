@@ -523,10 +523,20 @@ async def monitor_scan_progress(scan_id: str, result_id: str, process, output_di
         )
 
 async def monitor_scan_progress_realtime(scan_id: str, result_id: str, process, output_dir):
-    """Monitor scan progress with real-time updates and progress tracking"""
+    """Monitor scan progress with real-time updates and improved progress tracking"""
     try:
         progress = 0
         last_update = time.time()
+        scan_phases = {
+            "Starting scan": 5,
+            "Loading modules": 10,
+            "Crawling": 25,
+            "Analyzing": 60,
+            "Attack": 80,
+            "Report generation": 95,
+            "Completed": 100
+        }
+        current_phase = "Starting scan"
         
         # Read output line by line for real-time progress
         while True:
@@ -535,16 +545,45 @@ async def monitor_scan_progress_realtime(scan_id: str, result_id: str, process, 
                 break
                 
             line_text = line.decode().strip()
+            if not line_text:
+                continue
+                
+            # Parse progress from Wapiti output with better detection
+            progress_updated = False
             
-            # Parse progress from Wapiti output
-            if "Crawling" in line_text or "Scanning" in line_text:
-                progress = min(progress + 1, 90)  # Cap at 90% until completion
-            elif "Found" in line_text and "vulnerabilities" in line_text:
-                progress = 95
+            # Detect scan phases
+            if "Loading modules" in line_text or "module" in line_text.lower():
+                if progress < scan_phases["Loading modules"]:
+                    progress = scan_phases["Loading modules"]
+                    current_phase = "Loading modules"
+                    progress_updated = True
+            elif any(keyword in line_text.lower() for keyword in ["crawling", "exploring", "crawler"]):
+                if progress < scan_phases["Crawling"]:
+                    progress = scan_phases["Crawling"]
+                    current_phase = "Crawling"
+                    progress_updated = True
+                elif progress >= scan_phases["Crawling"] and progress < scan_phases["Analyzing"]:
+                    # Incremental progress during crawling
+                    progress = min(progress + 2, scan_phases["Analyzing"] - 5)
+                    progress_updated = True
+            elif any(keyword in line_text.lower() for keyword in ["analyzing", "scanning", "attack"]):
+                if progress < scan_phases["Attack"]:
+                    progress = min(scan_phases["Attack"], progress + 5)
+                    current_phase = "Analyzing/Attacking"
+                    progress_updated = True
+            elif "vulnerabilit" in line_text.lower() or "found" in line_text.lower():
+                if progress < scan_phases["Report generation"]:
+                    progress = scan_phases["Report generation"]
+                    current_phase = "Report generation"
+                    progress_updated = True
+            elif "report" in line_text.lower() or "json" in line_text.lower():
+                progress = scan_phases["Report generation"]
+                current_phase = "Report generation"
+                progress_updated = True
             
-            # Update progress every 5 seconds or on significant changes
+            # Update progress every 3 seconds or on significant changes
             current_time = time.time()
-            if current_time - last_update >= 5 or progress >= 95:
+            if progress_updated or (current_time - last_update >= 3):
                 await db.scan_results.update_one(
                     {"id": result_id},
                     {"$set": {"progress": progress}}
@@ -554,92 +593,116 @@ async def monitor_scan_progress_realtime(scan_id: str, result_id: str, process, 
                     "scan_id": scan_id,
                     "result_id": result_id,
                     "progress": progress,
-                    "message": line_text
+                    "phase": current_phase,
+                    "message": line_text[:100] if line_text else ""
                 })
                 last_update = current_time
         
         # Wait for process to complete
         await process.wait()
         
+        # Set final progress
+        progress = 100
+        current_phase = "Completed"
+        await db.scan_results.update_one(
+            {"id": result_id},
+            {"$set": {"progress": progress}}
+        )
+        
         if process.returncode == 0:
             # Parse results
             report_file = f"{output_dir}/report.json"
+            vulnerabilities = []
+            
+            # Wait a moment for file system sync
+            await asyncio.sleep(1)
+            
             if os.path.exists(report_file):
-                async with aiofiles.open(report_file, 'r') as f:
-                    content = await f.read()
-                    report_data = json.loads(content)
-                
-                # Extract vulnerabilities
-                vulnerabilities = []
-                if "vulnerabilities" in report_data:
-                    for vuln_type, vulns in report_data["vulnerabilities"].items():
-                        for vuln in vulns:
-                            vulnerability = Vulnerability(
-                                scan_id=scan_id,
-                                module=vuln_type,
-                                severity=vuln.get("level", "medium"),
-                                title=vuln.get("title", "Vulnerability Found"),
-                                description=vuln.get("description", ""),
-                                url=vuln.get("url", ""),
-                                parameter=vuln.get("parameter", ""),
-                                method=vuln.get("method", "GET"),
-                                attack_payload=vuln.get("payload", ""),
-                                curl_command=vuln.get("curl_command", ""),
-                                references=vuln.get("references", [])
-                            )
-                            vulnerabilities.append(vulnerability.dict())
-                            await db.vulnerabilities.insert_one(vulnerability.dict())
-                
-                # Update scan result
-                await db.scan_results.update_one(
-                    {"id": result_id},
-                    {"$set": {
-                        "status": "completed",
-                        "vulnerabilities": vulnerabilities,
-                        "scan_summary": {
-                            "total_vulnerabilities": len(vulnerabilities),
-                            "high_severity": len([v for v in vulnerabilities if v["severity"] == "high"]),
-                            "medium_severity": len([v for v in vulnerabilities if v["severity"] == "medium"]),
-                            "low_severity": len([v for v in vulnerabilities if v["severity"] == "low"]),
-                            "info_severity": len([v for v in vulnerabilities if v["severity"] == "info"])
-                        },
-                        "progress": 100,
-                        "completed_at": datetime.now(timezone.utc)
-                    }}
-                )
-                
-                await manager.broadcast({
-                    "type": "scan_completed",
-                    "scan_id": scan_id,
-                    "result_id": result_id,
-                    "vulnerabilities_count": len(vulnerabilities)
-                })
-            else:
-                await db.scan_results.update_one(
-                    {"id": result_id},
-                    {"$set": {
-                        "status": "completed",
-                        "progress": 100,
-                        "completed_at": datetime.now(timezone.utc)
-                    }}
-                )
+                try:
+                    async with aiofiles.open(report_file, 'r') as f:
+                        content = await f.read()
+                        if content.strip():  # Check if file has content
+                            report_data = json.loads(content)
+                        
+                            # Extract vulnerabilities with improved parsing
+                            if "vulnerabilities" in report_data:
+                                for vuln_type, vulns in report_data["vulnerabilities"].items():
+                                    if isinstance(vulns, list):
+                                        for vuln in vulns:
+                                            vulnerability = Vulnerability(
+                                                scan_id=scan_id,
+                                                module=vuln_type,
+                                                severity=vuln.get("level", vuln.get("severity", "medium")),
+                                                title=vuln.get("title", vuln.get("name", "Vulnerability Found")),
+                                                description=vuln.get("description", vuln.get("detail", "")),
+                                                url=vuln.get("url", vuln.get("target", "")),
+                                                parameter=vuln.get("parameter", vuln.get("param", "")),
+                                                method=vuln.get("method", "GET"),
+                                                attack_payload=vuln.get("payload", vuln.get("attack", "")),
+                                                curl_command=vuln.get("curl_command", ""),
+                                                references=vuln.get("references", vuln.get("refs", []))
+                                            )
+                                            vulnerabilities.append(vulnerability.dict())
+                                            await db.vulnerabilities.insert_one(vulnerability.dict())
+                except Exception as e:
+                    print(f"Error parsing report: {e}")
+                    # Continue with empty vulnerabilities list
+            
+            # Update scan result with comprehensive summary
+            severity_counts = {
+                "high": len([v for v in vulnerabilities if v["severity"] == "high"]),
+                "medium": len([v for v in vulnerabilities if v["severity"] == "medium"]),
+                "low": len([v for v in vulnerabilities if v["severity"] == "low"]),
+                "info": len([v for v in vulnerabilities if v["severity"] == "info"])
+            }
+            
+            await db.scan_results.update_one(
+                {"id": result_id},
+                {"$set": {
+                    "status": "completed",
+                    "vulnerabilities": vulnerabilities,
+                    "scan_summary": {
+                        "total_vulnerabilities": len(vulnerabilities),
+                        **severity_counts,
+                        "scan_duration": int(time.time() - process.pid)  # Approximate duration
+                    },
+                    "progress": 100,
+                    "completed_at": datetime.now(timezone.utc)
+                }}
+            )
+            
+            await manager.broadcast({
+                "type": "scan_completed",
+                "scan_id": scan_id,
+                "result_id": result_id,
+                "vulnerabilities_count": len(vulnerabilities),
+                "severity_breakdown": severity_counts
+            })
         else:
             # Process failed
             await db.scan_results.update_one(
                 {"id": result_id},
                 {"$set": {
                     "status": "failed",
-                    "error_message": "Scan process failed",
+                    "error_message": "Wapiti scan process failed",
+                    "progress": 0,
                     "completed_at": datetime.now(timezone.utc)
                 }}
             )
+            await manager.broadcast({
+                "type": "scan_error",
+                "scan_id": scan_id,
+                "result_id": result_id,
+                "error": "Scan process failed"
+            })
             
         # Clean up
         if scan_id in active_scans:
             del active_scans[scan_id]
             
-        # Remove temporary files
-        shutil.rmtree(output_dir, ignore_errors=True)
+        # Keep temporary files for debugging if scan failed, otherwise remove them
+        if process.returncode == 0:
+            shutil.rmtree(output_dir, ignore_errors=True)
         
     except Exception as e:
         await db.scan_results.update_one(
@@ -647,9 +710,16 @@ async def monitor_scan_progress_realtime(scan_id: str, result_id: str, process, 
             {"$set": {
                 "status": "failed",
                 "error_message": str(e),
+                "progress": 0,
                 "completed_at": datetime.now(timezone.utc)
             }}
         )
+        await manager.broadcast({
+            "type": "scan_error",
+            "scan_id": scan_id,
+            "result_id": result_id,
+            "error": str(e)
+        })
 
 async def export_to_csv(result: dict, config: dict):
     """Export scan result to CSV"""
