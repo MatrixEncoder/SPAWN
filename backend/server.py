@@ -757,10 +757,26 @@ async def export_to_csv(result: dict, config: dict):
 def _calculate_duration(result):
     """Calculate scan duration"""
     if result.get("started_at") and result.get("completed_at"):
-        start = datetime.fromisoformat(result["started_at"].replace('Z', '+00:00'))
-        end = datetime.fromisoformat(result["completed_at"].replace('Z', '+00:00'))
-        duration = end - start
-        return str(duration).split('.')[0]  # Remove microseconds
+        try:
+            started_at = result["started_at"]
+            completed_at = result["completed_at"]
+            
+            # Handle both string and datetime objects
+            if isinstance(started_at, str):
+                start = datetime.fromisoformat(started_at.replace('Z', '+00:00'))
+            else:
+                start = started_at
+                
+            if isinstance(completed_at, str):
+                end = datetime.fromisoformat(completed_at.replace('Z', '+00:00'))
+            else:
+                end = completed_at
+                
+            duration = end - start
+            return str(duration).split('.')[0]  # Remove microseconds
+        except Exception as e:
+            print(f"Error calculating duration: {e}")
+            return "N/A"
     return "N/A"
 
 async def export_to_pdf(result: dict, config: dict):
