@@ -148,22 +148,30 @@ active_scans = {}
 # Scan type presets
 SCAN_PRESETS = {
     "quick": {
-        "modules": ["exec", "file", "sql", "xss", "csrf", "ssrf"],
-        "depth": 3,
+        "modules": ["exec", "file", "sql", "xss", "csrf", "ssrf", "permanentxss", "redirect", "upload"],
+        "depth": 8,  # Increased depth for better coverage
         "level": 2,
-        "timeout": 30,
-        "max_scan_time": 600,  # 10 minutes
-        "description": "Quick scan for basic vulnerabilities",
-        "scope": "domain"
+        "timeout": 60,  # Increased timeout
+        "max_scan_time": 1200,  # 20 minutes - increased for thorough scanning
+        "max_links_per_page": 50,  # More links per page
+        "max_files_per_dir": 30,   # More files per directory
+        "scan_force": "normal",    # Balanced scanning approach
+        "description": "Quick scan for common vulnerabilities with enhanced coverage",
+        "scope": "folder"  # Changed from domain to folder for broader coverage
     },
     "standard": {
-        "modules": ["backup", "exec", "file", "sql", "xss", "csrf", "ssrf", "upload", "csp", "redirect", "permanentxss"],
-        "depth": 4,
+        "modules": ["backup", "exec", "file", "sql", "xss", "csrf", "ssrf", "upload", "csp", 
+                   "redirect", "permanentxss", "cookieflags", "http_headers", "methods", 
+                   "crlf", "log4shell", "shellshock", "xxe", "ldap", "nikto", "timesql"],
+        "depth": 12,  # Significantly increased depth
         "level": 2,
-        "timeout": 45,
-        "max_scan_time": 2400,  # 40 minutes
-        "description": "Standard comprehensive scan",
-        "scope": "domain"
+        "timeout": 90,  # Increased timeout
+        "max_scan_time": 3600,  # 1 hour - more time for thorough scanning
+        "max_links_per_page": 100,
+        "max_files_per_dir": 50,
+        "scan_force": "aggressive",  # More aggressive scanning
+        "description": "Standard comprehensive scan with enhanced vulnerability detection",
+        "scope": "folder"  # Changed from domain to folder
     },
     "deep": {
         "modules": ["backup", "brute_login_form", "buster", "cms", "cookieflags", "crlf", "csp",
@@ -171,12 +179,15 @@ SCAN_PRESETS = {
                    "ldap", "log4shell", "methods", "network_device", "nikto", "permanentxss",
                    "redirect", "shellshock", "spring4shell", "sql", "ssl", "ssrf", "takeover",
                    "timesql", "upload", "wapp", "wp_enum", "xss", "xxe"],
-        "depth": 6,
+        "depth": 20,  # Maximum depth for comprehensive scanning
         "level": 3,
-        "timeout": 60,
-        "max_scan_time": 7200,  # 2 hours
-        "description": "Deep comprehensive scan with all modules",
-        "scope": "domain"
+        "timeout": 120,  # Increased timeout for complex sites
+        "max_scan_time": 10800,  # 3 hours - maximum time for complete scanning
+        "max_links_per_page": 200,  # Maximum links extraction
+        "max_files_per_dir": 100,   # Maximum files per directory
+        "scan_force": "insane",     # Maximum scanning intensity
+        "description": "Deep comprehensive scan with all modules and maximum coverage",
+        "scope": "folder"  # Changed from domain to folder for maximum coverage
     }
 }
 
