@@ -224,7 +224,7 @@ async def get_scan_result(result_id: str):
 @api_router.get("/results/scan/{scan_id}", response_model=List[ScanResult])
 async def get_scan_results(scan_id: str):
     """Get all results for a specific scan"""
-    results = await db.scan_results.find({"scan_id": scan_id}).to_list(1000)
+    results = await db.scan_results.find({"scan_id": scan_id}, {"_id": 0}).to_list(1000)
     return [ScanResult(**result) for result in results]
 
 @api_router.get("/results")
