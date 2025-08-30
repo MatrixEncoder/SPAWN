@@ -328,14 +328,14 @@ async def export_scan_result(result_id: str, format: str):
         return await export_to_html(result, config)
 
 async def run_wapiti_scan(scan_id: str, config: dict, result_id: str):
-    """Run Wapiti scan in background"""
+    """Run Wapiti scan in background with real-time progress tracking"""
     try:
         # Create output directory
         output_dir = f"/tmp/wapiti_output_{scan_id}"
         os.makedirs(output_dir, exist_ok=True)
         
-        # Build Wapiti command - use system PATH for Docker compatibility
-        cmd = ["wapiti", "-u", config["target_url"]]
+        # Build Wapiti command - use full path for Docker compatibility
+        cmd = ["/root/.venv/bin/wapiti", "-u", config["target_url"]]
         
         # Add scope
         cmd.extend(["--scope", config["scope"]])
@@ -349,6 +349,10 @@ async def run_wapiti_scan(scan_id: str, config: dict, result_id: str):
         
         # Add timeout
         cmd.extend(["-t", str(config["timeout"])])
+        
+        # Add max scan time if specified
+        if config.get("max_scan_time"):
+            cmd.extend(["--max-scan-time", str(config["max_scan_time"])])
         
         # Add authentication if provided
         if config.get("auth_username") and config.get("auth_password"):
@@ -394,13 +398,13 @@ async def run_wapiti_scan(scan_id: str, config: dict, result_id: str):
         process = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+            stderr=asyncio.subprocess.STDOUT
         )
         
         active_scans[scan_id] = process
         
-        # Monitor progress
-        await monitor_scan_progress(scan_id, result_id, process, output_dir)
+        # Monitor progress with real-time updates
+        await monitor_scan_progress_realtime(scan_id, result_id, process, output_dir)
         
     except Exception as e:
         # Update scan result with error
