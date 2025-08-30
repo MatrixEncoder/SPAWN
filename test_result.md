@@ -285,7 +285,20 @@ backend:
         agent: "testing"
         comment: "All error scenarios tested successfully: invalid scan IDs (404), invalid result IDs (404), invalid export formats (400), invalid scan configs (422)"
 
-  - task: "Wapiti Integration"
+  - task: "Backend Dependency Issue Resolution"
+    implemented: true
+    working: true
+    file: "/app/backend/requirements.txt"
+    stuck_count: 1
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "User reported 'error creating scan: undefined' and missing scan modules in UI"
+      - working: true
+        agent: "main"
+        comment: "Fixed by installing missing Pillow dependency required by reportlab for PDF export. Backend now responds correctly to API calls"
     implemented: true
     working: true
     file: "/app/backend/server.py"
