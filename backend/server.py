@@ -251,11 +251,11 @@ async def export_scan_result(result_id: str, format: str):
     if format not in ["pdf", "csv", "html", "json"]:
         raise HTTPException(status_code=400, detail="Unsupported format")
     
-    result = await db.scan_results.find_one({"id": result_id})
+    result = await db.scan_results.find_one({"id": result_id}, {"_id": 0})
     if not result:
         raise HTTPException(status_code=404, detail="Scan result not found")
     
-    config = await db.scan_configurations.find_one({"id": result["scan_id"]})
+    config = await db.scan_configurations.find_one({"id": result["scan_id"]}, {"_id": 0})
     
     if format == "json":
         return {"scan_result": result, "scan_config": config}
