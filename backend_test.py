@@ -238,22 +238,33 @@ class SPAWNBackendTester:
                 if response.status_code == 200:
                     # Check content type and basic content
                     content_type = response.headers.get('content-type', '')
+                    content_length = len(response.content)
+                    
                     if format_type == "json":
                         data = response.json()
                         if "scan_result" in data:
-                            self.log_test(f"Export {format_type.upper()}", True, f"JSON export successful")
+                            self.log_test(f"Export {format_type.upper()}", True, f"JSON export successful ({content_length} bytes)")
                             success_count += 1
                         else:
                             self.log_test(f"Export {format_type.upper()}", False, "Invalid JSON structure", data)
-                    elif format_type == "csv" and "text/csv" in content_type:
-                        self.log_test(f"Export {format_type.upper()}", True, f"CSV export successful")
-                        success_count += 1
+                    elif format_type == "csv" and ("text/csv" in content_type or "application/csv" in content_type):
+                        if content_length > 100:  # Basic content check
+                            self.log_test(f"Export {format_type.upper()}", True, f"CSV export successful ({content_length} bytes)")
+                            success_count += 1
+                        else:
+                            self.log_test(f"Export {format_type.upper()}", False, f"CSV content too small ({content_length} bytes)")
                     elif format_type == "pdf" and "application/pdf" in content_type:
-                        self.log_test(f"Export {format_type.upper()}", True, f"PDF export successful")
-                        success_count += 1
+                        if content_length > 1000:  # PDF should be substantial
+                            self.log_test(f"Export {format_type.upper()}", True, f"PDF export successful ({content_length} bytes)")
+                            success_count += 1
+                        else:
+                            self.log_test(f"Export {format_type.upper()}", False, f"PDF content too small ({content_length} bytes)")
                     elif format_type == "html" and "text/html" in content_type:
-                        self.log_test(f"Export {format_type.upper()}", True, f"HTML export successful")
-                        success_count += 1
+                        if content_length > 200:  # HTML should have reasonable content
+                            self.log_test(f"Export {format_type.upper()}", True, f"HTML export successful ({content_length} bytes)")
+                            success_count += 1
+                        else:
+                            self.log_test(f"Export {format_type.upper()}", False, f"HTML content too small ({content_length} bytes)")
                     else:
                         self.log_test(f"Export {format_type.upper()}", False, f"Unexpected content type: {content_type}")
                 elif response.status_code == 404:
@@ -266,6 +277,182 @@ class SPAWNBackendTester:
                 self.log_test(f"Export {format_type.upper()}", False, f"Request error: {str(e)}")
         
         return success_count == len(formats)
+
+    def test_scan_presets(self):
+        """Test GET /api/scan-presets endpoint for improved configurations"""
+        try:
+            response = self.session.get(f"{self.base_url}/scan-presets")
+            if response.status_code == 200:
+                data = response.json()
+                if "presets" in data:
+                    presets = data["presets"]
+                    
+                    # Check if quick preset has improved parameters
+                    if "quick" in presets:
+                        quick = presets["quick"]
+                        expected_improvements = {
+                            "scope": "domain",  # Should be domain, not folder
+                            "depth": 3,         # Should be at least 3
+                            "level": 2,         # Should be at least 2
+                            "modules": 6        # Should have 6 modules
+                        }
+                        
+                        issues = []
+                        if quick.get("scope") != expected_improvements["scope"]:
+                            issues.append(f"scope is {quick.get('scope')}, expected {expected_improvements['scope']}")
+                        if quick.get("depth", 0) < expected_improvements["depth"]:
+                            issues.append(f"depth is {quick.get('depth')}, expected >= {expected_improvements['depth']}")
+                        if quick.get("level", 0) < expected_improvements["level"]:
+                            issues.append(f"level is {quick.get('level')}, expected >= {expected_improvements['level']}")
+                        if len(quick.get("modules", [])) < expected_improvements["modules"]:
+                            issues.append(f"modules count is {len(quick.get('modules', []))}, expected >= {expected_improvements['modules']}")
+                        
+                        if not issues:
+                            self.log_test("Scan Presets - Quick Improved", True, f"Quick preset has improved parameters: scope={quick.get('scope')}, depth={quick.get('depth')}, level={quick.get('level')}, modules={len(quick.get('modules', []))}")
+                        else:
+                            self.log_test("Scan Presets - Quick Improved", False, f"Quick preset issues: {'; '.join(issues)}", quick)
+                    
+                    self.log_test("Scan Presets", True, f"Retrieved {len(presets)} scan presets")
+                    return True
+                else:
+                    self.log_test("Scan Presets", False, "Invalid response format", data)
+            else:
+                self.log_test("Scan Presets", False, f"HTTP {response.status_code}", response.text)
+        except Exception as e:
+            self.log_test("Scan Presets", False, f"Request error: {str(e)}")
+        return False
+
+    def test_vulnerable_site_scanning(self):
+        """Test scanning against a known vulnerable site to verify authentic vulnerability detection"""
+        try:
+            # Create scan configuration for vulnerable test site
+            vulnerable_sites = [
+                "http://testphp.vulnweb.com/",
+                "http://demo.testfire.net/",
+                "https://xss-game.appspot.com/"
+            ]
+            
+            for site_url in vulnerable_sites:
+                try:
+                    scan_config = {
+                        "name": f"Vulnerability Test - {site_url}",
+                        "target_url": site_url,
+                        "scan_type": "quick",  # Use improved quick scan
+                        "scope": "domain",
+                        "modules": ["exec", "file", "sql", "xss", "csrf", "ssrf"],
+                        "depth": 3,
+                        "level": 2,
+                        "timeout": 45,
+                        "max_scan_time": 300,  # 5 minutes max
+                        "verify_ssl": False  # Some test sites have SSL issues
+                    }
+                    
+                    # Create scan configuration
+                    response = self.session.post(
+                        f"{self.base_url}/scans",
+                        json=scan_config,
+                        headers={"Content-Type": "application/json"}
+                    )
+                    
+                    if response.status_code == 200:
+                        scan_data = response.json()
+                        scan_id = scan_data["id"]
+                        self.created_scan_ids.append(scan_id)
+                        
+                        # Start the scan
+                        start_response = self.session.post(f"{self.base_url}/scans/{scan_id}/start")
+                        if start_response.status_code == 200:
+                            start_data = start_response.json()
+                            result_id = start_data["result_id"]
+                            self.created_result_ids.append(result_id)
+                            
+                            self.log_test(f"Vulnerable Site Scan Started - {site_url}", True, f"Scan started for {site_url}, result_id: {result_id}")
+                            
+                            # Monitor scan progress for up to 5 minutes
+                            max_wait_time = 300  # 5 minutes
+                            start_time = time.time()
+                            last_progress = 0
+                            progress_updates = 0
+                            
+                            while time.time() - start_time < max_wait_time:
+                                result_response = self.session.get(f"{self.base_url}/results/{result_id}")
+                                if result_response.status_code == 200:
+                                    result_data = result_response.json()
+                                    current_progress = result_data.get("progress", 0)
+                                    status = result_data.get("status", "unknown")
+                                    
+                                    # Track progress updates
+                                    if current_progress > last_progress:
+                                        progress_updates += 1
+                                        last_progress = current_progress
+                                        print(f"   Progress: {current_progress}% - Status: {status}")
+                                    
+                                    if status == "completed":
+                                        vulnerabilities = result_data.get("vulnerabilities", [])
+                                        vuln_count = len(vulnerabilities)
+                                        
+                                        if vuln_count > 0:
+                                            self.log_test(f"Vulnerable Site Detection - {site_url}", True, f"Found {vuln_count} vulnerabilities on {site_url}")
+                                            
+                                            # Test export with this result
+                                            self.test_export_functionality(result_id)
+                                            return True
+                                        else:
+                                            self.log_test(f"Vulnerable Site Detection - {site_url}", False, f"No vulnerabilities found on known vulnerable site {site_url}")
+                                        break
+                                    elif status == "failed":
+                                        error_msg = result_data.get("error_message", "Unknown error")
+                                        self.log_test(f"Vulnerable Site Scan - {site_url}", False, f"Scan failed: {error_msg}")
+                                        break
+                                
+                                time.sleep(10)  # Wait 10 seconds between checks
+                            
+                            # Check if we got progress updates
+                            if progress_updates > 0:
+                                self.log_test(f"Real-time Progress - {site_url}", True, f"Received {progress_updates} progress updates (max: {last_progress}%)")
+                            else:
+                                self.log_test(f"Real-time Progress - {site_url}", False, f"No progress updates received during scan")
+                            
+                        else:
+                            self.log_test(f"Vulnerable Site Scan Start - {site_url}", False, f"Failed to start scan: {start_response.status_code}")
+                    else:
+                        self.log_test(f"Vulnerable Site Config - {site_url}", False, f"Failed to create scan config: {response.status_code}")
+                        
+                except Exception as e:
+                    self.log_test(f"Vulnerable Site Test - {site_url}", False, f"Error testing {site_url}: {str(e)}")
+                    continue
+            
+            return False
+            
+        except Exception as e:
+            self.log_test("Vulnerable Site Scanning", False, f"General error: {str(e)}")
+            return False
+
+    def test_existing_scan_result(self, result_id: str = "581a87f8-acc7-49b5-959d-4a9461e49dbf"):
+        """Test the existing scan result mentioned in the review request"""
+        try:
+            response = self.session.get(f"{self.base_url}/results/{result_id}")
+            if response.status_code == 200:
+                data = response.json()
+                vulnerabilities = data.get("vulnerabilities", [])
+                status = data.get("status", "unknown")
+                progress = data.get("progress", 0)
+                
+                self.log_test("Existing Scan Result", True, f"Found existing result: status={status}, progress={progress}%, vulnerabilities={len(vulnerabilities)}")
+                
+                # Test export functionality with existing result
+                if status == "completed":
+                    self.test_export_functionality(result_id)
+                    return True
+                else:
+                    self.log_test("Existing Scan Status", False, f"Existing scan not completed: {status}")
+            elif response.status_code == 404:
+                self.log_test("Existing Scan Result", False, f"Existing scan result {result_id} not found")
+            else:
+                self.log_test("Existing Scan Result", False, f"HTTP {response.status_code}", response.text)
+        except Exception as e:
+            self.log_test("Existing Scan Result", False, f"Request error: {str(e)}")
+        return False
 
     def test_websocket_connection(self):
         """Test WebSocket connection"""
