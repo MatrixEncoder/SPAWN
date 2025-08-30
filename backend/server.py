@@ -22,6 +22,12 @@ from reportlab.lib import colors
 import csv
 import tempfile
 import shutil
+import time
+import re
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.platypus import Image, PageBreak
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
+import requests
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
