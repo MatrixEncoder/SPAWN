@@ -36,6 +36,17 @@ const App = () => {
       const data = JSON.parse(event.data);
       console.log('WebSocket message:', data);
       
+      if (data.type === 'scan_progress') {
+        setRealtimeUpdates(prev => ({
+          ...prev,
+          [data.result_id]: {
+            progress: data.progress,
+            phase: data.phase,
+            message: data.message
+          }
+        }));
+      }
+      
       if (data.type === 'scan_completed' || data.type === 'scan_error' || data.type === 'scan_progress') {
         fetchResults();
       }
