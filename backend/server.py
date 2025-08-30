@@ -172,7 +172,7 @@ async def get_scan_configurations():
 @api_router.get("/scans/{scan_id}", response_model=ScanConfiguration)
 async def get_scan_configuration(scan_id: str):
     """Get a specific scan configuration"""
-    config = await db.scan_configurations.find_one({"id": scan_id})
+    config = await db.scan_configurations.find_one({"id": scan_id}, {"_id": 0})
     if not config:
         raise HTTPException(status_code=404, detail="Scan configuration not found")
     return ScanConfiguration(**config)
