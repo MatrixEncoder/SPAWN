@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Test the SPAWN vulnerability scanner backend comprehensively including API endpoints, database operations, Wapiti integration, export functionality, WebSocket communication, and error handling."
+user_problem_statement: "Enhance the SPAWN vulnerability scanner with authentic, real Wapiti scanning, attractive UI with charts and features, real-time scan progress tracking, scan type selection (quick, standard, deep), and improved PDF reports with SPAWN branding."
 
 backend:
   - task: "Root API Endpoint"
