@@ -6,16 +6,13 @@ WORKDIR /app
 # Install system dependencies
 RUN apk add --no-cache python3 make g++
 
-# Copy package.json first
+# Copy package.json
 COPY frontend/package.json ./
 
-# Copy yarn.lock if it exists, otherwise it will be generated
-COPY frontend/yarn.loc[k] ./
-
-# Install dependencies (this will create yarn.lock if it doesn't exist)
+# Install dependencies (will create yarn.lock automatically)
 RUN yarn install --network-timeout 1000000
 
-# Copy frontend code
+# Copy rest of frontend code
 COPY frontend/ .
 
 # Build the application
