@@ -39,6 +39,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+      target: development
     container_name: spawn_frontend
     restart: unless-stopped
     ports:
