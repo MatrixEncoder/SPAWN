@@ -3,27 +3,29 @@ FROM node:20-alpine
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies (only what's needed)
 RUN apk add --no-cache python3 make g++
 
-# Copy package.json
-COPY frontend/package.json ./
+# Copy package files for better caching
+COPY frontend/package.json frontend/yarn.lock* ./
 
-# Install dependencies (will create yarn.lock automatically)
-RUN yarn install --network-timeout 1000000
+# Install dependencies with optimizations
+RUN yarn install --frozen-lockfile --network-timeout 300000 --cache-folder /tmp/yarn-cache && \
+    rm -rf /tmp/yarn-cache
 
 # Copy rest of frontend code
 COPY frontend/ .
 
-# Build the application
+# Build the application for production
 RUN yarn build
 
 # Expose port
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
+# Health check with curl (lighter than wget)
+RUN apk add --no-cache curl
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3000 || exit 1
 
 # Start the application
 CMD ["yarn", "start"]
