@@ -72,6 +72,7 @@ class ScanConfiguration(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     target_url: str
+    scan_type: str = "standard"
     scope: str = "folder"  # url, page, folder, subdomain, domain, punk
     modules: List[str] = Field(default_factory=lambda: ["exec", "file", "sql", "xss", "csrf", "ssrf"])
     depth: int = 5
