@@ -444,9 +444,44 @@ const ScanList = ({ scans, onRefresh, results }) => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-4xl font-bold text-white mb-2">Scan Configurations</h2>
-        <p className="text-gray-400 text-lg">Manage your vulnerability scan configurations</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-4xl font-bold text-white mb-2">Scan Configurations</h2>
+          <p className="text-gray-400 text-lg">Manage your vulnerability scan configurations</p>
+        </div>
+        
+        {/* Queue Status & Start All Button */}
+        <div className="flex items-center space-x-4">
+          <div className="text-right">
+            <div className="flex items-center space-x-2 mb-1">
+              <span className="text-gray-300 text-sm">Queue Status:</span>
+              <span className="text-blue-400 font-medium">{queuedScans.length} queued</span>
+              <span className="text-green-400 font-medium">{runningScans.length} running</span>
+            </div>
+            {queuedScans.length > 0 && (
+              <p className="text-gray-500 text-xs">{queuedScans.length} scan(s) ready to start</p>
+            )}
+          </div>
+          
+          {queuedScans.length > 0 && (
+            <button
+              onClick={startAllQueuedScans}
+              disabled={startingAllScans}
+              className={`px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold rounded-lg transition-all transform hover:scale-105 shadow-lg ${
+                startingAllScans ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              {startingAllScans ? (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Starting...</span>
+                </div>
+              ) : (
+                `🚀 START ALL SCANS (${queuedScans.length})`
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-6">
