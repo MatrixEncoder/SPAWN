@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 def create_mock_result_with_vulnerabilities():
     """Create a mock scan result with sample vulnerabilities"""
     
-    base_url = "https://report-template-1.preview.emergentagent.com/api"
+    base_url = "https://scan-scheduler.preview.emergentagent.com/api"
     
     # First create a scan configuration
     scan_config = {
@@ -58,7 +58,7 @@ if __name__ == "__main__":
         print(f"Mock result created: {result_id}")
         
         # Test the export functionality
-        base_url = "https://report-template-1.preview.emergentagent.com/api"
+        base_url = "https://scan-scheduler.preview.emergentagent.com/api"
         
         # Wait a moment for the scan to potentially find something
         import time
