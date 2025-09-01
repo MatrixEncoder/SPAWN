@@ -1933,6 +1933,7 @@ def main():
     import sys
     
     print("🔍 SPAWN Vulnerability Scanner Backend Test Suite")
+    print("🎯 FOCUS: SCAN QUEUE SYSTEM FUNCTIONALITY")
     print("Testing backend at: https://resume-work-10.preview.emergentagent.com/api")
     print()
     
@@ -1946,11 +1947,14 @@ def main():
             success = tester.run_report_export_tests()
         elif sys.argv[1] == "--review":
             success = tester.run_review_request_test()
+        elif sys.argv[1] == "--queue":
+            # Run only queue system tests
+            success = tester.test_scan_queue_system()
         else:
             success = tester.run_comprehensive_test()
     else:
-        # Default: run review request test as requested
-        success = tester.run_review_request_test()
+        # Default: run comprehensive test with queue system focus
+        success = tester.run_comprehensive_test()
     
     if success:
         print("\n🎉 All critical backend tests passed!")
