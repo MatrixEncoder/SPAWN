@@ -209,6 +209,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Fixed by using full path to wapiti (/root/.venv/bin/wapiti). POST /api/scans/{id}/start now works correctly and creates scan results"
+      - working: true
+        agent: "testing"
+        comment: "WAPITI PATH DETECTION COMPREHENSIVE TESTING COMPLETED: ✅ get_wapiti_command() function working perfectly - detects correct Wapiti path at /root/.venv/bin/wapiti. ✅ Scan creation with testphp.vulnweb.com successful - created scan config f09e041d-0792-46a8-bf3c-8369f194c9dc. ✅ Scan execution starts without path errors - result_id 41763b6f-c34b-4af7-9042-c2b6757cbe96 reached 95% progress immediately, confirming Wapiti command executes properly. ✅ Scan completion verified - scan completed successfully with 100% progress and found 78 vulnerabilities on testphp.vulnweb.com. ✅ Output file creation verified - JSON export contains all 78 vulnerabilities, confirming scan process creates output files properly. The Wapiti path detection and execution functionality is working correctly without any Docker failures or command path errors."
 
   - task: "Scan Stop Functionality"
     implemented: true
