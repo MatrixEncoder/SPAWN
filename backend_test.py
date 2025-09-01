@@ -1929,6 +1929,73 @@ class SPAWNBackendTester:
         
         return None
 
+    def run_wapiti_path_test(self):
+        """Run the specific Wapiti path detection test requested in the review"""
+        print("🎯 WAPITI PATH DETECTION AND EXECUTION TEST")
+        print("=" * 80)
+        print("Review Request: Test Wapiti path detection and scan execution functionality")
+        print("Focus: Verify get_wapiti_command() works and scans execute without path errors")
+        print("Target: http://testphp.vulnweb.com for execution testing")
+        print("=" * 80)
+        
+        # Test basic connectivity first
+        if not self.test_root_endpoint():
+            print("❌ Cannot connect to backend. Stopping tests.")
+            return False
+        
+        # Test Wapiti path detection function
+        print("\n🔧 Testing Wapiti path detection...")
+        path_detection_success = self.test_wapiti_path_detection()
+        
+        # Test scan execution with testphp.vulnweb.com
+        print("\n🚀 Testing scan execution with testphp.vulnweb.com...")
+        execution_success = self.test_wapiti_scan_execution_with_testphp()
+        
+        # Test scan presets to ensure configuration is working
+        print("\n⚙️ Testing scan presets...")
+        presets_success = self.test_scan_presets()
+        
+        # Print summary
+        print("\n" + "=" * 80)
+        print("📊 WAPITI PATH TEST SUMMARY")
+        print("=" * 80)
+        
+        passed_tests = sum(1 for result in self.test_results if result["success"])
+        total_tests = len(self.test_results)
+        success_rate = (passed_tests / total_tests * 100) if total_tests > 0 else 0
+        
+        print(f"Tests Passed: {passed_tests}/{total_tests} ({success_rate:.1f}%)")
+        
+        # Show key findings
+        key_findings = []
+        for result in self.test_results:
+            if any(keyword in result["test"] for keyword in ["Wapiti", "Path", "Execution"]):
+                status = "✅ PASS" if result["success"] else "❌ FAIL"
+                key_findings.append(f"{status}: {result['test']} - {result['message']}")
+        
+        if key_findings:
+            print("\n🔍 KEY FINDINGS:")
+            for finding in key_findings:
+                print(f"   {finding}")
+        
+        # Overall assessment
+        critical_tests = [
+            "Wapiti Path Detection",
+            "Wapiti Path Execution", 
+            "Wapiti Scan Start"
+        ]
+        
+        critical_passed = sum(1 for result in self.test_results 
+                            if result["test"] in critical_tests and result["success"])
+        
+        print(f"\n🎯 WAPITI FUNCTIONALITY ASSESSMENT:")
+        if critical_passed >= 2:
+            print("   ✅ Wapiti path detection and execution working correctly")
+        else:
+            print("   ❌ Wapiti path detection or execution has issues")
+        
+        return path_detection_success and execution_success
+
     def run_review_request_test(self):
         """Run the specific test requested in the review"""
         print("🎯 SPAWN VULNERABILITY DETECTION AUTHENTICITY TEST")
