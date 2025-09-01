@@ -1464,21 +1464,21 @@ async def export_to_html(result: dict, config: dict):
             # Format vulnerability type
             vuln_type = vuln.get("module", "UNKNOWN").upper()
             if "XSS" in vuln_type:
-                vuln_type = "XSS"
+                vuln_type = "CROSS SITE SCRIPTING"
             elif "SQL" in vuln_type:
                 vuln_type = "SQL INJECTION"
             elif "CSRF" in vuln_type:
-                vuln_type = "CSRF"
+                vuln_type = "CROSS SITE REQUEST FORGERY"
             elif "PATH" in vuln_type:
                 vuln_type = "PATH TRAVERSAL"
             elif "REFLECTED" in vuln_type:
-                vuln_type = "REFLECTED CR"
+                vuln_type = "CROSS SITE SCRIPTING"
             
             severity_class = f"severity-{vuln.get('severity', 'low').lower()}"
             severity = vuln.get("severity", "medium").upper()
-            url = vuln.get("url", "")[:40] + ("..." if len(vuln.get("url", "")) > 40 else "")
+            url = vuln.get("url", "")  # Show full URL
             parameter = vuln.get("parameter", "")
-            desc_short = description[:50] + ("..." if len(description) > 50 else "")
+            desc_short = description  # Show full description
             
             html_content += f"""
                 <tr>
