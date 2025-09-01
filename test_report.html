@@ -1,0 +1,665 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>SPAWN Professional Vulnerability Assessment Report</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; background-color: #f5f5f5; }
+            .container { background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            .header { text-align: center; margin-bottom: 40px; }
+            .info-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            .dist-table { width: 60%; border-collapse: collapse; margin-bottom: 30px; }
+            .vuln-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            .continuation-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            th, td { border: 1px solid #333; padding: 12px; text-align: left; }
+            .info-table th { background-color: #d3d3d3; font-weight: bold; }
+            .info-table td { background-color: white; }
+            .dist-table th { background-color: #1e3a8a; color: white; font-weight: bold; }
+            .dist-table td { background-color: white; }
+            .vuln-table th { background-color: #1e3a8a; color: white; font-weight: bold; }
+            .vuln-table td { background-color: white; }
+            .continuation-table th { background-color: #f97316; color: white; font-weight: bold; }
+            .continuation-table td { background-color: white; }
+            .severity-high { color: red; font-weight: bold; }
+            .severity-medium { color: orange; font-weight: bold; }
+            .severity-low { color: blue; }
+            .section-title { color: #8b0000; font-size: 16px; font-weight: bold; margin: 30px 0 15px 0; }
+            .footer { text-align: center; margin-top: 50px; font-size: 9px; color: #666; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+        
+            <!-- Header Information Table -->
+            <table class="info-table">
+                <tr><th>Target URL:</th><td>http://testphp.vulnweb.com/</td></tr>
+                <tr><th>Scan Date:</th><td>2025-09-01T13:06:21</td></tr>
+                <tr><th>Scan Status:</th><td>COMPLETED</td></tr>
+                <tr><th>Total Vulnerabilities:</th><td>39</td></tr>
+                <tr><th>Scan Duration:</th><td>100% completed</td></tr>
+            </table>
+            
+            <div class="section-title">Vulnerability Distribution</div>
+    
+            <table class="dist-table">
+                <tr><th>Severity Level</th><th>Count</th><th>Risk Assessment</th></tr>
+        
+                <tr><td>MEDIUM</td><td>19</td><td>Should be addressed soon</td></tr>
+                </table>
+            <div class="section-title">Detailed Vulnerability Findings</div>
+            <table class="vuln-table">
+                <tr>
+                    <th>#</th>
+                    <th>Type</th>
+                    <th>Severity</th>
+                    <th>URL</th>
+                    <th>Parameter</th>
+                    <th>Description</th>
+                    <th>CWE</th>
+                </tr>
+        
+                <tr>
+                    <td>1</td>
+                    <td>CROSS SITE REQUEST FORGERY</td>
+                    <td class="severity-medium">MEDIUM</td>
+                    <td>http://testphp.vulnweb.com/guestbook.php</td>
+                    <td></td>
+                    <td>Lack of anti CSRF token</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>2</td>
+                    <td>CROSS SITE REQUEST FORGERY</td>
+                    <td class="severity-medium">MEDIUM</td>
+                    <td>http://testphp.vulnweb.com/search.php</td>
+                    <td></td>
+                    <td>Lack of anti CSRF token</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>3</td>
+                    <td>CROSS SITE REQUEST FORGERY</td>
+                    <td class="severity-medium">MEDIUM</td>
+                    <td>http://testphp.vulnweb.com/secured/newus...</td>
+                    <td></td>
+                    <td>Lack of anti CSRF token</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>4</td>
+                    <td>CROSS SITE REQUEST FORGERY</td>
+                    <td class="severity-medium">MEDIUM</td>
+                    <td>http://testphp.vulnweb.com/userinfo.php</td>
+                    <td></td>
+                    <td>Lack of anti CSRF token</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>5</td>
+                    <td>PATH TRAVERSAL</td>
+                    <td class="severity-critical">CRITICAL</td>
+                    <td>http://testphp.vulnweb.com/showimage.php</td>
+                    <td>file</td>
+                    <td>Possible fopen() vulnerability via injection in th...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>6</td>
+                    <td>PATH TRAVERSAL</td>
+                    <td class="severity-critical">CRITICAL</td>
+                    <td>http://testphp.vulnweb.com/showimage.php</td>
+                    <td>file</td>
+                    <td>Possible source code disclosure via injection in t...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>7</td>
+                    <td>PATH TRAVERSAL</td>
+                    <td class="severity-critical">CRITICAL</td>
+                    <td>http://testphp.vulnweb.com/showimage.php</td>
+                    <td>file</td>
+                    <td>Possible fopen() vulnerability via injection in th...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>8</td>
+                    <td>PATH TRAVERSAL</td>
+                    <td class="severity-critical">CRITICAL</td>
+                    <td>http://testphp.vulnweb.com/showimage.php</td>
+                    <td>file</td>
+                    <td>Possible source code disclosure via injection in t...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>9</td>
+                    <td>REFLECTED CR</td>
+                    <td class="severity-medium">MEDIUM</td>
+                    <td>http://testphp.vulnweb.com/artists.php</td>
+                    <td>artist</td>
+                    <td>Reflected Cross Site Scripting vulnerability found...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>10</td>
+                    <td>REFLECTED CR</td>
+                    <td class="severity-medium">MEDIUM</td>
+                    <td>http://testphp.vulnweb.com/hpp/</td>
+                    <td>pp</td>
+                    <td>Reflected Cross Site Scripting vulnerability found...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>11</td>
+                    <td>REFLECTED CR</td>
+                    <td class="severity-medium">MEDIUM</td>
+                    <td>http://testphp.vulnweb.com/hpp/params.ph...</td>
+                    <td>p</td>
+                    <td>Reflected Cross Site Scripting vulnerability found...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>12</td>
+                    <td>REFLECTED CR</td>
+                    <td class="severity-medium">MEDIUM</td>
+                    <td>http://testphp.vulnweb.com/hpp/params.ph...</td>
+                    <td>pp</td>
+                    <td>Reflected Cross Site Scripting vulnerability found...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>13</td>
+                    <td>REFLECTED CR</td>
+                    <td class="severity-medium">MEDIUM</td>
+                    <td>http://testphp.vulnweb.com/listproducts....</td>
+                    <td>cat</td>
+                    <td>Reflected Cross Site Scripting vulnerability found...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>14</td>
+                    <td>REFLECTED CR</td>
+                    <td class="severity-medium">MEDIUM</td>
+                    <td>http://testphp.vulnweb.com/product.php</td>
+                    <td>pic</td>
+                    <td>Reflected Cross Site Scripting vulnerability found...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>15</td>
+                    <td>REFLECTED CR</td>
+                    <td class="severity-medium">MEDIUM</td>
+                    <td>http://testphp.vulnweb.com/guestbook.php</td>
+                    <td>name</td>
+                    <td>Reflected Cross Site Scripting vulnerability found...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>16</td>
+                    <td>REFLECTED CR</td>
+                    <td class="severity-medium">MEDIUM</td>
+                    <td>http://testphp.vulnweb.com/guestbook.php</td>
+                    <td>text</td>
+                    <td>Reflected Cross Site Scripting vulnerability found...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>17</td>
+                    <td>REFLECTED CR</td>
+                    <td class="severity-medium">MEDIUM</td>
+                    <td>http://testphp.vulnweb.com/search.php</td>
+                    <td>searchFor</td>
+                    <td>Reflected Cross Site Scripting vulnerability found...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>18</td>
+                    <td>REFLECTED CR</td>
+                    <td class="severity-medium">MEDIUM</td>
+                    <td>http://testphp.vulnweb.com/secured/newus...</td>
+                    <td>uuname</td>
+                    <td>Reflected Cross Site Scripting vulnerability found...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>19</td>
+                    <td>REFLECTED CR</td>
+                    <td class="severity-medium">MEDIUM</td>
+                    <td>http://testphp.vulnweb.com/secured/newus...</td>
+                    <td>urname</td>
+                    <td>Reflected Cross Site Scripting vulnerability found...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>20</td>
+                    <td>REFLECTED CR</td>
+                    <td class="severity-medium">MEDIUM</td>
+                    <td>http://testphp.vulnweb.com/secured/newus...</td>
+                    <td>ucc</td>
+                    <td>Reflected Cross Site Scripting vulnerability found...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>21</td>
+                    <td>REFLECTED CR</td>
+                    <td class="severity-medium">MEDIUM</td>
+                    <td>http://testphp.vulnweb.com/secured/newus...</td>
+                    <td>uemail</td>
+                    <td>Reflected Cross Site Scripting vulnerability found...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>22</td>
+                    <td>REFLECTED CR</td>
+                    <td class="severity-medium">MEDIUM</td>
+                    <td>http://testphp.vulnweb.com/secured/newus...</td>
+                    <td>uphone</td>
+                    <td>Reflected Cross Site Scripting vulnerability found...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>23</td>
+                    <td>REFLECTED CR</td>
+                    <td class="severity-medium">MEDIUM</td>
+                    <td>http://testphp.vulnweb.com/secured/newus...</td>
+                    <td>uaddress</td>
+                    <td>Reflected Cross Site Scripting vulnerability found...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>24</td>
+                    <td>SQL INJECTION</td>
+                    <td class="severity-critical">CRITICAL</td>
+                    <td>http://testphp.vulnweb.com/artists.php</td>
+                    <td>artist</td>
+                    <td>SQL Injection (DBMS: MySQL) via injection in the p...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>25</td>
+                    <td>SQL INJECTION</td>
+                    <td class="severity-critical">CRITICAL</td>
+                    <td>http://testphp.vulnweb.com/artists.php</td>
+                    <td>artist</td>
+                    <td>SQL Injection via injection in the parameter artis...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>26</td>
+                    <td>SQL INJECTION</td>
+                    <td class="severity-critical">CRITICAL</td>
+                    <td>http://testphp.vulnweb.com/artists.php</td>
+                    <td>artist</td>
+                    <td>SQL Injection via injection in the parameter artis...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>27</td>
+                    <td>SQL INJECTION</td>
+                    <td class="severity-critical">CRITICAL</td>
+                    <td>http://testphp.vulnweb.com/listproducts....</td>
+                    <td>cat</td>
+                    <td>SQL Injection (DBMS: MySQL) via injection in the p...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>28</td>
+                    <td>SQL INJECTION</td>
+                    <td class="severity-critical">CRITICAL</td>
+                    <td>http://testphp.vulnweb.com/listproducts....</td>
+                    <td>cat</td>
+                    <td>SQL Injection via injection in the parameter cat</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>29</td>
+                    <td>SQL INJECTION</td>
+                    <td class="severity-critical">CRITICAL</td>
+                    <td>http://testphp.vulnweb.com/product.php</td>
+                    <td>pic</td>
+                    <td>SQL Injection (DBMS: MySQL) via injection in the p...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>30</td>
+                    <td>SQL INJECTION</td>
+                    <td class="severity-critical">CRITICAL</td>
+                    <td>http://testphp.vulnweb.com/product.php</td>
+                    <td>pic</td>
+                    <td>SQL Injection via injection in the parameter pic</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>31</td>
+                    <td>SQL INJECTION</td>
+                    <td class="severity-critical">CRITICAL</td>
+                    <td>http://testphp.vulnweb.com/product.php</td>
+                    <td>pic</td>
+                    <td>SQL Injection via injection in the parameter pic</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>32</td>
+                    <td>SQL INJECTION</td>
+                    <td class="severity-critical">CRITICAL</td>
+                    <td>http://testphp.vulnweb.com/product.php</td>
+                    <td>pic</td>
+                    <td>SQL Injection via injection in the parameter pic</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>33</td>
+                    <td>SQL INJECTION</td>
+                    <td class="severity-critical">CRITICAL</td>
+                    <td>http://testphp.vulnweb.com/product.php</td>
+                    <td>pic</td>
+                    <td>SQL Injection via injection in the parameter pic</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>34</td>
+                    <td>SQL INJECTION</td>
+                    <td class="severity-critical">CRITICAL</td>
+                    <td>http://testphp.vulnweb.com/search.php</td>
+                    <td>test</td>
+                    <td>SQL Injection (DBMS: MySQL) via injection in the p...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>35</td>
+                    <td>SQL INJECTION</td>
+                    <td class="severity-critical">CRITICAL</td>
+                    <td>http://testphp.vulnweb.com/search.php</td>
+                    <td>test</td>
+                    <td>SQL Injection (DBMS: MySQL) via injection in the p...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>36</td>
+                    <td>SQL INJECTION</td>
+                    <td class="severity-critical">CRITICAL</td>
+                    <td>http://testphp.vulnweb.com/search.php</td>
+                    <td>searchFor</td>
+                    <td>SQL Injection (DBMS: MySQL) via injection in the p...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>37</td>
+                    <td>SQL INJECTION</td>
+                    <td class="severity-critical">CRITICAL</td>
+                    <td>http://testphp.vulnweb.com/secured/newus...</td>
+                    <td>uuname</td>
+                    <td>SQL Injection (DBMS: MySQL) via injection in the p...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>38</td>
+                    <td>SQL INJECTION</td>
+                    <td class="severity-critical">CRITICAL</td>
+                    <td>http://testphp.vulnweb.com/userinfo.php</td>
+                    <td>uname</td>
+                    <td>SQL Injection (DBMS: MySQL) via injection in the p...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            
+                <tr>
+                    <td>39</td>
+                    <td>SQL INJECTION</td>
+                    <td class="severity-critical">CRITICAL</td>
+                    <td>http://testphp.vulnweb.com/userinfo.php</td>
+                    <td>pass</td>
+                    <td>SQL Injection (DBMS: MySQL) via injection in the p...</td>
+                    <td>WSTG-ATHZ-01</td>
+                </tr>
+            </table>
+                <table class="continuation-table">
+                    <tr><th>Module</th><th>Title</th><th>URL</th><th>Parameter</th></tr>
+            
+                    <tr>
+                        <td>Cross Site Requ</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>p</td>
+                    </tr>
+                
+                    <tr>
+                        <td>Cross Site Requ</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>pp</td>
+                    </tr>
+                
+                    <tr>
+                        <td>Cross Site Requ</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>cat</td>
+                    </tr>
+                
+                    <tr>
+                        <td>Cross Site Requ</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>pic</td>
+                    </tr>
+                
+                    <tr>
+                        <td>Cross Site Requ</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>name</td>
+                    </tr>
+                
+                    <tr>
+                        <td>Cross Site Requ</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>text</td>
+                    </tr>
+                
+                    <tr>
+                        <td>Cross Site Requ</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>searchFor</td>
+                    </tr>
+                
+                    <tr>
+                        <td>Cross Site Requ</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>uuname</td>
+                    </tr>
+                
+                    <tr>
+                        <td>Cross Site Requ</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>urname</td>
+                    </tr>
+                
+                    <tr>
+                        <td>Cross Site Requ</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>ucc</td>
+                    </tr>
+                
+                    <tr>
+                        <td>Cross Site Requ</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>uemail</td>
+                    </tr>
+                
+                    <tr>
+                        <td>Cross Site Requ</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>uphone</td>
+                    </tr>
+                
+                    <tr>
+                        <td>Cross Site Requ</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>uaddress</td>
+                    </tr>
+                
+                    <tr>
+                        <td>SQL Injection</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>artist</td>
+                    </tr>
+                
+                    <tr>
+                        <td>SQL Injection</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>artist</td>
+                    </tr>
+                
+                    <tr>
+                        <td>SQL Injection</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>artist</td>
+                    </tr>
+                
+                    <tr>
+                        <td>SQL Injection</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>cat</td>
+                    </tr>
+                
+                    <tr>
+                        <td>SQL Injection</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>cat</td>
+                    </tr>
+                
+                    <tr>
+                        <td>SQL Injection</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>pic</td>
+                    </tr>
+                
+                    <tr>
+                        <td>SQL Injection</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>pic</td>
+                    </tr>
+                
+                    <tr>
+                        <td>SQL Injection</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>pic</td>
+                    </tr>
+                
+                    <tr>
+                        <td>SQL Injection</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>pic</td>
+                    </tr>
+                
+                    <tr>
+                        <td>SQL Injection</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>pic</td>
+                    </tr>
+                
+                    <tr>
+                        <td>SQL Injection</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>test</td>
+                    </tr>
+                
+                    <tr>
+                        <td>SQL Injection</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>test</td>
+                    </tr>
+                
+                    <tr>
+                        <td>SQL Injection</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>searchFor</td>
+                    </tr>
+                
+                    <tr>
+                        <td>SQL Injection</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>uuname</td>
+                    </tr>
+                
+                    <tr>
+                        <td>SQL Injection</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>uname</td>
+                    </tr>
+                
+                    <tr>
+                        <td>SQL Injection</td>
+                        <td>Vulnerability Found</td>
+                        <td></td>
+                        <td>pass</td>
+                    </tr>
+                </table>
+            <div class="footer">
+                Generated by SPAWN - Professional Vulnerability Assessment Platform<br>
+                Report Generated: 2025-09-01 13:18:09<br>
+                © 2024 SPAWN Security Solutions - All Rights Reserved
+            </div>
+        </div>
+    </body>
+    </html>
+    
