@@ -983,15 +983,15 @@ async def export_to_csv(result: dict, config: dict):
         # Format vulnerability type
         vuln_type = vuln.get("module", "UNKNOWN").upper()
         if "XSS" in vuln_type:
-            vuln_type = "XSS"
+            vuln_type = "CROSS SITE SCRIPTING"
         elif "SQL" in vuln_type:
             vuln_type = "SQL INJECTION"
         elif "CSRF" in vuln_type:
-            vuln_type = "CSRF"
+            vuln_type = "CROSS SITE REQUEST FORGERY"
         elif "PATH" in vuln_type:
             vuln_type = "PATH TRAVERSAL"
         elif "REFLECTED" in vuln_type:
-            vuln_type = "REFLECTED CR"
+            vuln_type = "CROSS SITE SCRIPTING"
         
         output.append([
             str(i),
