@@ -485,48 +485,89 @@ const ScanList = ({ scans, onRefresh, results }) => {
       </div>
 
       <div className="grid gap-6">
-        {scans.map((scan) => (
-          <div key={scan.id} className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/50 p-6 hover:bg-gray-800/70 transition-colors">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex-1">
-                <div className="flex items-center space-x-3 mb-2">
-                  <h3 className="text-xl font-semibold text-white">{scan.name}</h3>
-                  <span className="px-3 py-1 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-medium rounded-full">
-                    {scan.scan_type?.toUpperCase() || 'STANDARD'}
-                  </span>
-                </div>
-                <p className="text-gray-400">{scan.target_url}</p>
-                {scanProgress[scan.id] && (
-                  <div className="mt-3">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm text-gray-300">Progress</span>
-                      <span className="text-sm text-gray-300">{scanProgress[scan.id]}%</span>
-                    </div>
-                    <ProgressBar progress={scanProgress[scan.id]} status="running" />
+        {scans.map((scan) => {
+          // Find the corresponding result for this scan
+          const scanResult = results?.find(result => result.scan_id === scan.id);
+          const isQueued = scanResult?.status === 'queued';
+          const isRunning = scanResult?.status === 'running';
+          const isCompleted = scanResult?.status === 'completed';
+          
+          return (
+            <div key={scan.id} className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/50 p-6 hover:bg-gray-800/70 transition-colors">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <h3 className="text-xl font-semibold text-white">{scan.name}</h3>
+                    <span className="px-3 py-1 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-medium rounded-full">
+                      {scan.scan_type?.toUpperCase() || 'STANDARD'}
+                    </span>
+                    {/* Queue Status Badge */}
+                    {isQueued && (
+                      <span className="px-3 py-1 bg-blue-500 text-white text-xs font-medium rounded-full animate-pulse">
+                        📋 QUEUED
+                      </span>
+                    )}
+                    {isRunning && (
+                      <span className="px-3 py-1 bg-green-500 text-white text-xs font-medium rounded-full animate-pulse">
+                        ⚡ RUNNING
+                      </span>
+                    )}
+                    {isCompleted && (
+                      <span className="px-3 py-1 bg-gray-500 text-white text-xs font-medium rounded-full">
+                        ✅ COMPLETED
+                      </span>
+                    )}
                   </div>
-                )}
+                  <p className="text-gray-400">{scan.target_url}</p>
+                  {scanProgress[scan.id] && (
+                    <div className="mt-3">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm text-gray-300">Progress</span>
+                        <span className="text-sm text-gray-300">{scanProgress[scan.id]}%</span>
+                      </div>
+                      <ProgressBar progress={scanProgress[scan.id]} status="running" />
+                    </div>
+                  )}
+                  {/* Show queue position if queued */}
+                  {isQueued && (
+                    <div className="mt-2">
+                      <span className="text-sm text-blue-400">
+                        📋 Queued - Ready to start
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => startScan(scan.id)}
+                    disabled={isRunning}
+                    className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+                      isRunning 
+                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                        : 'bg-green-500 hover:bg-green-600 text-white'
+                    }`}
+                  >
+                    {isRunning ? 'Running...' : 'Start Scan'}
+                  </button>
+                  <button
+                    onClick={() => stopScan(scan.id)}
+                    disabled={!isRunning}
+                    className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+                      !isRunning 
+                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                        : 'bg-red-500 hover:bg-red-600 text-white'
+                    }`}
+                  >
+                    Stop Scan
+                  </button>
+                  <button
+                    onClick={() => setSelectedScan(selectedScan === scan.id ? null : scan.id)}
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors font-medium"
+                  >
+                    {selectedScan === scan.id ? 'Hide Details' : 'View Details'}
+                  </button>
+                </div>
               </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => startScan(scan.id)}
-                  className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors font-medium"
-                >
-                  Start Scan
-                </button>
-                <button
-                  onClick={() => stopScan(scan.id)}
-                  className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors font-medium"
-                >
-                  Stop Scan
-                </button>
-                <button
-                  onClick={() => setSelectedScan(selectedScan === scan.id ? null : scan.id)}
-                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors font-medium"
-                >
-                  {selectedScan === scan.id ? 'Hide Details' : 'View Details'}
-                </button>
-              </div>
-            </div>
             
             {selectedScan === scan.id && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 p-4 bg-gray-700/30 rounded-lg">
