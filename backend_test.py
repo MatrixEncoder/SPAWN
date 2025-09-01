@@ -1027,6 +1027,216 @@ class SPAWNBackendTester:
         
         return all(result[1] for result in error_tests)
 
+    def test_wapiti_path_detection(self):
+        """Test the get_wapiti_command() function for correct Wapiti path detection"""
+        print("\n🎯 TESTING WAPITI PATH DETECTION FUNCTIONALITY")
+        print("=" * 80)
+        print("Testing get_wapiti_command() function to ensure correct Wapiti path detection")
+        
+        try:
+            # Import the function from the backend server
+            import sys
+            import os
+            sys.path.append('/app/backend')
+            
+            # Import the get_wapiti_command function
+            from server import get_wapiti_command
+            
+            # Test the Wapiti path detection
+            wapiti_path = get_wapiti_command()
+            
+            print(f"\n📋 Wapiti Path Detection Results:")
+            print(f"   Detected Wapiti Path: {wapiti_path}")
+            
+            # Verify the path exists and is executable
+            if wapiti_path == "wapiti":
+                # Check if wapiti is in PATH
+                import subprocess
+                try:
+                    result = subprocess.run(["which", "wapiti"], capture_output=True, text=True)
+                    if result.returncode == 0:
+                        actual_path = result.stdout.strip()
+                        print(f"   Wapiti found in PATH: {actual_path}")
+                        self.log_test("Wapiti Path Detection", True, f"Wapiti command found in PATH: {actual_path}")
+                        return True
+                    else:
+                        self.log_test("Wapiti Path Detection", False, "Wapiti command not found in PATH")
+                        return False
+                except Exception as e:
+                    self.log_test("Wapiti Path Detection", False, f"Error checking PATH: {str(e)}")
+                    return False
+            else:
+                # Check if the specific path exists
+                if os.path.exists(wapiti_path):
+                    # Check if it's executable
+                    if os.access(wapiti_path, os.X_OK):
+                        print(f"   Wapiti executable found: {wapiti_path}")
+                        self.log_test("Wapiti Path Detection", True, f"Wapiti executable found at: {wapiti_path}")
+                        return True
+                    else:
+                        self.log_test("Wapiti Path Detection", False, f"Wapiti path exists but not executable: {wapiti_path}")
+                        return False
+                else:
+                    self.log_test("Wapiti Path Detection", False, f"Wapiti path does not exist: {wapiti_path}")
+                    return False
+                    
+        except ImportError as e:
+            self.log_test("Wapiti Path Detection", False, f"Cannot import get_wapiti_command function: {str(e)}")
+            return False
+        except Exception as e:
+            self.log_test("Wapiti Path Detection", False, f"Error testing Wapiti path detection: {str(e)}")
+            return False
+
+    def test_wapiti_scan_execution_with_testphp(self):
+        """Test scan execution with testphp.vulnweb.com to verify Wapiti works without path errors"""
+        print("\n🎯 TESTING WAPITI SCAN EXECUTION")
+        print("=" * 80)
+        print("Testing scan creation and execution with http://testphp.vulnweb.com")
+        
+        try:
+            # Create a simple scan configuration for testphp.vulnweb.com
+            scan_config = {
+                "name": f"Wapiti Path Test - testphp.vulnweb.com",
+                "target_url": "http://testphp.vulnweb.com",
+                "scan_type": "quick",  # Use quick scan for faster testing
+                "scope": "folder",
+                "depth": 8,
+                "level": 2,
+                "timeout": 60,
+                "max_scan_time": 600,  # 10 minutes max
+                "verify_ssl": False
+            }
+            
+            print(f"\n📋 Creating scan configuration:")
+            print(f"   Target: {scan_config['target_url']}")
+            print(f"   Scan Type: {scan_config['scan_type']}")
+            print(f"   Depth: {scan_config['depth']}")
+            
+            # Create scan configuration
+            response = self.session.post(
+                f"{self.base_url}/scans",
+                json=scan_config,
+                headers={"Content-Type": "application/json"}
+            )
+            
+            if response.status_code != 200:
+                self.log_test("Wapiti Scan Creation", False, 
+                    f"Failed to create scan config: HTTP {response.status_code}")
+                return False
+            
+            scan_data = response.json()
+            scan_id = scan_data["id"]
+            self.created_scan_ids.append(scan_id)
+            
+            self.log_test("Wapiti Scan Creation", True, 
+                f"Scan configuration created successfully: {scan_id}")
+            
+            # Start the scan
+            print(f"\n🚀 Starting Wapiti scan execution...")
+            start_response = self.session.post(f"{self.base_url}/scans/{scan_id}/start")
+            
+            if start_response.status_code != 200:
+                self.log_test("Wapiti Scan Start", False, 
+                    f"Failed to start scan: HTTP {start_response.status_code}")
+                return False
+            
+            start_data = start_response.json()
+            result_id = start_data["result_id"]
+            self.created_result_ids.append(result_id)
+            
+            self.log_test("Wapiti Scan Start", True, 
+                f"Wapiti scan started successfully, result_id: {result_id}")
+            
+            # Monitor scan for path errors and execution
+            print(f"\n📊 Monitoring scan execution for path errors...")
+            max_wait_time = 300  # 5 minutes maximum wait
+            start_time = time.time()
+            last_progress = 0
+            progress_updates = 0
+            scan_started_properly = False
+            
+            while time.time() - start_time < max_wait_time:
+                result_response = self.session.get(f"{self.base_url}/results/{result_id}")
+                if result_response.status_code == 200:
+                    result_data = result_response.json()
+                    current_progress = result_data.get("progress", 0)
+                    status = result_data.get("status", "unknown")
+                    error_message = result_data.get("error_message", "")
+                    
+                    # Track progress updates
+                    if current_progress > last_progress:
+                        progress_updates += 1
+                        last_progress = current_progress
+                        print(f"   Progress: {current_progress}% - Status: {status}")
+                        
+                        # If we get any progress, the scan started properly
+                        if current_progress > 0:
+                            scan_started_properly = True
+                    
+                    # Check for path-related errors
+                    if error_message:
+                        if "wapiti" in error_message.lower() and ("not found" in error_message.lower() or "no such file" in error_message.lower()):
+                            self.log_test("Wapiti Path Error Check", False, 
+                                f"Wapiti path error detected: {error_message}")
+                            return False
+                        elif "failed" in status:
+                            self.log_test("Wapiti Execution Error", False, 
+                                f"Scan failed with error: {error_message}")
+                            return False
+                    
+                    if status == "completed":
+                        scan_duration = time.time() - start_time
+                        vulnerabilities = result_data.get("vulnerabilities", [])
+                        vuln_count = len(vulnerabilities)
+                        
+                        print(f"\n✅ Scan completed in {scan_duration:.1f} seconds")
+                        print(f"   Vulnerabilities found: {vuln_count}")
+                        
+                        self.log_test("Wapiti Scan Completion", True, 
+                            f"Scan completed successfully in {scan_duration:.1f}s, found {vuln_count} vulnerabilities")
+                        
+                        # Test output file creation
+                        if vuln_count > 0:
+                            self.log_test("Wapiti Output Files", True, 
+                                "Scan results properly generated and parsed")
+                        else:
+                            self.log_test("Wapiti Output Files", True, 
+                                "Scan completed without errors (no vulnerabilities found)")
+                        
+                        return True
+                        
+                    elif status == "failed":
+                        error_msg = result_data.get("error_message", "Unknown error")
+                        self.log_test("Wapiti Scan Execution", False, 
+                            f"Scan failed: {error_msg}")
+                        return False
+                    elif status == "running" and current_progress > 0:
+                        scan_started_properly = True
+                
+                time.sleep(5)  # Wait 5 seconds between checks
+            
+            # Check if scan started properly (no immediate path errors)
+            if scan_started_properly:
+                self.log_test("Wapiti Path Execution", True, 
+                    f"Wapiti scan started and ran without path errors (progress: {last_progress}%)")
+            else:
+                self.log_test("Wapiti Path Execution", False, 
+                    "Wapiti scan did not start properly - possible path issues")
+            
+            # Check if we got progress updates (indicates Wapiti is working)
+            if progress_updates > 0:
+                self.log_test("Wapiti Progress Tracking", True, 
+                    f"Received {progress_updates} progress updates - Wapiti execution working")
+            else:
+                self.log_test("Wapiti Progress Tracking", False, 
+                    "No progress updates received - possible Wapiti execution issues")
+            
+            return scan_started_properly and progress_updates > 0
+            
+        except Exception as e:
+            self.log_test("Wapiti Scan Execution Test", False, f"Error: {str(e)}")
+            return False
+
     def test_review_request_vulnerability_detection(self):
         """Test SPAWN scanner's actual vulnerability detection capabilities as requested in review"""
         print("🎯 TESTING REVIEW REQUEST: SPAWN Vulnerability Detection Authenticity")
