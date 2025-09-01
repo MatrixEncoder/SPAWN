@@ -244,7 +244,15 @@ async def create_scan_configuration(config: ScanConfigurationCreate):
     
     scan_config = ScanConfiguration(**{**config.dict(), **preset_config})
     await db.scan_configurations.insert_one(scan_config.dict())
-    return scan_config
+    
+    # Create a queued scan result for this configuration
+    result = ScanResult(scan_id=scan_config.id, status="queued")
+    await db.scan_results.insert_one(result.dict())
+    
+    # Return scan config with result_id for tracking
+    response = scan_config.dict()
+    response["result_id"] = result.id
+    return response
 
 @api_router.get("/scans", response_model=List[ScanConfiguration])
 async def get_scan_configurations():
