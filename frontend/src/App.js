@@ -148,7 +148,7 @@ const App = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'dashboard' && <Dashboard results={results} />}
-        {activeTab === 'scans' && <ScanList scans={scans} onRefresh={fetchScans} />}
+        {activeTab === 'scans' && <ScanList scans={scans} results={results} onRefresh={() => { fetchScans(); fetchResults(); }} />}
         {activeTab === 'results' && <ResultsList results={results} onRefresh={fetchResults} realtimeUpdates={realtimeUpdates} />}
         {activeTab === 'create' && <CreateScan modules={modules} scanPresets={scanPresets} onCreated={fetchScans} />}
       </main>
