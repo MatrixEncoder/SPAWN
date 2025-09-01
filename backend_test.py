@@ -1284,6 +1284,303 @@ class SPAWNBackendTester:
             self.log_test("Review Request - General Error", False, f"Error during vulnerability detection test: {str(e)}")
             return False
 
+    def test_scan_queue_system(self):
+        """Test the SCAN QUEUE SYSTEM functionality as requested in review"""
+        print("\n🎯 TESTING SCAN QUEUE SYSTEM FUNCTIONALITY")
+        print("=" * 80)
+        print("Testing: Scan Creation & Queuing, Queue Management, Start All Scans, Individual Scan Start")
+        print("Testing: Status Transitions, Queue Status Tracking, Mixed Queue States")
+        
+        queue_test_results = []
+        
+        # 1. Test Scan Creation & Queuing - POST /api/scans creates scan configs and automatically creates queued scan results
+        print("\n📋 TEST 1: Scan Creation & Automatic Queuing")
+        try:
+            # Create multiple scan configurations to test queuing
+            scan_configs = []
+            for i in range(3):
+                scan_config = {
+                    "name": f"Queue Test Scan {i+1} - {uuid.uuid4().hex[:8]}",
+                    "target_url": "https://httpbin.org/get",
+                    "scan_type": "quick",
+                    "scope": "folder",
+                    "modules": ["exec", "file", "sql", "xss"],
+                    "depth": 3,
+                    "level": 1,
+                    "timeout": 30,
+                    "verify_ssl": True
+                }
+                
+                response = self.session.post(
+                    f"{self.base_url}/scans",
+                    json=scan_config,
+                    headers={"Content-Type": "application/json"}
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    scan_configs.append({
+                        "scan_id": data["id"],
+                        "result_id": data.get("result_id"),
+                        "name": data["name"]
+                    })
+                    self.created_scan_ids.append(data["id"])
+                    if data.get("result_id"):
+                        self.created_result_ids.append(data["result_id"])
+                else:
+                    queue_test_results.append(("Scan Creation & Queuing", False, f"Failed to create scan {i+1}: HTTP {response.status_code}"))
+                    break
+            
+            if len(scan_configs) == 3:
+                queue_test_results.append(("Scan Creation & Queuing", True, f"Created 3 scan configurations with automatic queuing"))
+                print(f"   ✅ Created {len(scan_configs)} scans with automatic result queuing")
+                for config in scan_configs:
+                    print(f"      - {config['name']}: scan_id={config['scan_id']}, result_id={config['result_id']}")
+            else:
+                queue_test_results.append(("Scan Creation & Queuing", False, f"Only created {len(scan_configs)}/3 scan configurations"))
+                
+        except Exception as e:
+            queue_test_results.append(("Scan Creation & Queuing", False, f"Error: {str(e)}"))
+        
+        # 2. Test Queue Management - GET /api/results shows queued scans with status="queued"
+        print("\n📊 TEST 2: Queue Management & Status Tracking")
+        try:
+            response = self.session.get(f"{self.base_url}/results")
+            if response.status_code == 200:
+                all_results = response.json()
+                queued_results = [r for r in all_results if r.get("status") == "queued"]
+                running_results = [r for r in all_results if r.get("status") == "running"]
+                
+                if len(queued_results) >= 3:
+                    queue_test_results.append(("Queue Management", True, f"Found {len(queued_results)} queued scans, {len(running_results)} running"))
+                    print(f"   ✅ Queue Status: {len(queued_results)} queued, {len(running_results)} running")
+                    
+                    # Verify our created scans are in the queue
+                    our_queued_scans = []
+                    for config in scan_configs:
+                        for result in queued_results:
+                            if result.get("id") == config["result_id"]:
+                                our_queued_scans.append(result)
+                                break
+                    
+                    if len(our_queued_scans) >= 2:
+                        queue_test_results.append(("Queue Status Verification", True, f"Verified {len(our_queued_scans)} of our scans are properly queued"))
+                        print(f"   ✅ Verified {len(our_queued_scans)} of our scans are in queue with status='queued'")
+                    else:
+                        queue_test_results.append(("Queue Status Verification", False, f"Only {len(our_queued_scans)} of our scans found in queue"))
+                else:
+                    queue_test_results.append(("Queue Management", False, f"Expected >=3 queued scans, found {len(queued_results)}"))
+            else:
+                queue_test_results.append(("Queue Management", False, f"Failed to get results: HTTP {response.status_code}"))
+        except Exception as e:
+            queue_test_results.append(("Queue Management", False, f"Error: {str(e)}"))
+        
+        # 3. Test Individual Scan Start - POST /api/scans/{id}/start works for individual scans
+        print("\n⚡ TEST 3: Individual Scan Start")
+        try:
+            if scan_configs:
+                individual_scan = scan_configs[0]
+                response = self.session.post(f"{self.base_url}/scans/{individual_scan['scan_id']}/start")
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if "result_id" in data and "message" in data:
+                        queue_test_results.append(("Individual Scan Start", True, f"Individual scan started: {data['message']}"))
+                        print(f"   ✅ Individual scan started: {individual_scan['name']}")
+                        
+                        # Wait and check if status changed from queued to running
+                        time.sleep(2)
+                        result_response = self.session.get(f"{self.base_url}/results/{individual_scan['result_id']}")
+                        if result_response.status_code == 200:
+                            result_data = result_response.json()
+                            new_status = result_data.get("status")
+                            if new_status == "running":
+                                queue_test_results.append(("Status Transition (queued->running)", True, f"Scan transitioned to running status"))
+                                print(f"   ✅ Status transition: queued -> running")
+                            else:
+                                queue_test_results.append(("Status Transition (queued->running)", False, f"Status is '{new_status}', expected 'running'"))
+                    else:
+                        queue_test_results.append(("Individual Scan Start", False, "Invalid response format"))
+                else:
+                    queue_test_results.append(("Individual Scan Start", False, f"HTTP {response.status_code}"))
+        except Exception as e:
+            queue_test_results.append(("Individual Scan Start", False, f"Error: {str(e)}"))
+        
+        # 4. Test Start All Scans - POST /api/scans/start-all starts all queued scans and returns correct count
+        print("\n🚀 TEST 4: Start All Queued Scans")
+        try:
+            # First check how many scans are currently queued
+            pre_response = self.session.get(f"{self.base_url}/results")
+            pre_queued_count = 0
+            if pre_response.status_code == 200:
+                all_results = pre_response.json()
+                pre_queued_count = len([r for r in all_results if r.get("status") == "queued"])
+            
+            print(f"   📊 Pre-start queue status: {pre_queued_count} queued scans")
+            
+            # Start all queued scans
+            response = self.session.post(f"{self.base_url}/scans/start-all")
+            
+            if response.status_code == 200:
+                data = response.json()
+                started_count = data.get("started_count", 0)
+                message = data.get("message", "")
+                started_scans = data.get("started_scans", [])
+                
+                if started_count > 0:
+                    queue_test_results.append(("Start All Scans", True, f"Started {started_count} queued scans"))
+                    print(f"   ✅ Start All Scans: {message}")
+                    print(f"   📊 Started {started_count} scans")
+                    
+                    # Verify the started scans details
+                    if started_scans:
+                        print(f"   📋 Started scans details:")
+                        for scan in started_scans:
+                            print(f"      - {scan.get('scan_name', 'Unknown')}: scan_id={scan.get('scan_id')}, result_id={scan.get('result_id')}")
+                    
+                    # Wait and check queue status after starting all
+                    time.sleep(3)
+                    post_response = self.session.get(f"{self.base_url}/results")
+                    if post_response.status_code == 200:
+                        all_results = post_response.json()
+                        post_queued_count = len([r for r in all_results if r.get("status") == "queued"])
+                        running_count = len([r for r in all_results if r.get("status") == "running"])
+                        
+                        print(f"   📊 Post-start queue status: {post_queued_count} queued, {running_count} running")
+                        
+                        if post_queued_count < pre_queued_count:
+                            queue_test_results.append(("Queue Count Accuracy", True, f"Queue reduced from {pre_queued_count} to {post_queued_count}"))
+                        else:
+                            queue_test_results.append(("Queue Count Accuracy", False, f"Queue count unchanged: {pre_queued_count} -> {post_queued_count}"))
+                elif started_count == 0 and "No queued scans" in message:
+                    queue_test_results.append(("Start All Scans - Empty Queue", True, "Correctly handled empty queue"))
+                    print(f"   ✅ Empty queue handled correctly: {message}")
+                else:
+                    queue_test_results.append(("Start All Scans", False, f"Unexpected response: started_count={started_count}, message={message}"))
+            else:
+                queue_test_results.append(("Start All Scans", False, f"HTTP {response.status_code}"))
+        except Exception as e:
+            queue_test_results.append(("Start All Scans", False, f"Error: {str(e)}"))
+        
+        # 5. Test Mixed Queue States - Create some queued scans, start some individually, then use start-all on remaining
+        print("\n🔄 TEST 5: Mixed Queue States & Advanced Scenarios")
+        try:
+            # Create 2 more scans for mixed state testing
+            mixed_scan_configs = []
+            for i in range(2):
+                scan_config = {
+                    "name": f"Mixed Queue Test {i+1} - {uuid.uuid4().hex[:8]}",
+                    "target_url": "https://httpbin.org/delay/1",
+                    "scan_type": "quick",
+                    "scope": "folder",
+                    "modules": ["exec", "file"],
+                    "depth": 2,
+                    "level": 1,
+                    "timeout": 20,
+                    "verify_ssl": True
+                }
+                
+                response = self.session.post(
+                    f"{self.base_url}/scans",
+                    json=scan_config,
+                    headers={"Content-Type": "application/json"}
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    mixed_scan_configs.append({
+                        "scan_id": data["id"],
+                        "result_id": data.get("result_id"),
+                        "name": data["name"]
+                    })
+                    self.created_scan_ids.append(data["id"])
+                    if data.get("result_id"):
+                        self.created_result_ids.append(data["result_id"])
+            
+            if len(mixed_scan_configs) == 2:
+                print(f"   📋 Created 2 additional scans for mixed state testing")
+                
+                # Start one individually
+                individual_response = self.session.post(f"{self.base_url}/scans/{mixed_scan_configs[0]['scan_id']}/start")
+                if individual_response.status_code == 200:
+                    print(f"   ⚡ Started one scan individually: {mixed_scan_configs[0]['name']}")
+                
+                # Wait a moment
+                time.sleep(2)
+                
+                # Check queue state
+                queue_response = self.session.get(f"{self.base_url}/results")
+                if queue_response.status_code == 200:
+                    all_results = queue_response.json()
+                    queued_count = len([r for r in all_results if r.get("status") == "queued"])
+                    running_count = len([r for r in all_results if r.get("status") == "running"])
+                    
+                    print(f"   📊 Mixed state: {queued_count} queued, {running_count} running")
+                    
+                    # Now start all remaining queued scans
+                    start_all_response = self.session.post(f"{self.base_url}/scans/start-all")
+                    if start_all_response.status_code == 200:
+                        start_all_data = start_all_response.json()
+                        remaining_started = start_all_data.get("started_count", 0)
+                        
+                        queue_test_results.append(("Mixed Queue States", True, f"Mixed state handled correctly: started {remaining_started} remaining queued scans"))
+                        print(f"   ✅ Started {remaining_started} remaining queued scans")
+                    else:
+                        queue_test_results.append(("Mixed Queue States", False, f"Start-all failed in mixed state: HTTP {start_all_response.status_code}"))
+                else:
+                    queue_test_results.append(("Mixed Queue States", False, "Failed to check queue state"))
+            else:
+                queue_test_results.append(("Mixed Queue States", False, f"Failed to create test scans for mixed state"))
+                
+        except Exception as e:
+            queue_test_results.append(("Mixed Queue States", False, f"Error: {str(e)}"))
+        
+        # 6. Test Empty Queue Scenario
+        print("\n🔄 TEST 6: Empty Queue Scenario")
+        try:
+            # Wait for scans to potentially complete or clear queue manually by starting all
+            time.sleep(5)
+            
+            # Try start-all on potentially empty queue
+            response = self.session.post(f"{self.base_url}/scans/start-all")
+            if response.status_code == 200:
+                data = response.json()
+                started_count = data.get("started_count", 0)
+                message = data.get("message", "")
+                
+                if started_count == 0 and ("No queued scans" in message or "started 0" in message.lower()):
+                    queue_test_results.append(("Empty Queue Handling", True, "Empty queue handled correctly"))
+                    print(f"   ✅ Empty queue handled: {message}")
+                elif started_count > 0:
+                    queue_test_results.append(("Empty Queue Handling", True, f"Found and started {started_count} remaining queued scans"))
+                    print(f"   ✅ Found and started {started_count} remaining scans")
+                else:
+                    queue_test_results.append(("Empty Queue Handling", False, f"Unexpected response: {message}"))
+            else:
+                queue_test_results.append(("Empty Queue Handling", False, f"HTTP {response.status_code}"))
+        except Exception as e:
+            queue_test_results.append(("Empty Queue Handling", False, f"Error: {str(e)}"))
+        
+        # Log all queue system test results
+        print(f"\n📊 SCAN QUEUE SYSTEM TEST SUMMARY")
+        print("=" * 60)
+        passed_tests = 0
+        total_tests = len(queue_test_results)
+        
+        for test_name, success, message in queue_test_results:
+            status = "✅ PASS" if success else "❌ FAIL"
+            print(f"{status}: {test_name}")
+            print(f"   {message}")
+            if success:
+                passed_tests += 1
+            
+            # Log to main test results
+            self.log_test(f"Queue System - {test_name}", success, message)
+        
+        print(f"\n🎯 Queue System Tests: {passed_tests}/{total_tests} passed ({passed_tests/total_tests*100:.1f}%)")
+        
+        return passed_tests == total_tests
+
     def run_comprehensive_test(self):
         """Run all backend tests"""
         print("🚀 Starting SPAWN Backend Comprehensive Test Suite")
