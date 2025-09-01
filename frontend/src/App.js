@@ -568,43 +568,44 @@ const ScanList = ({ scans, onRefresh, results }) => {
                   </button>
                 </div>
               </div>
-            
-            {selectedScan === scan.id && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 p-4 bg-gray-700/30 rounded-lg">
-                <div>
-                  <p className="text-gray-400 text-sm">Scope</p>
-                  <p className="text-white font-medium">{scan.scope}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400 text-sm">Depth</p>
-                  <p className="text-white font-medium">{scan.depth}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400 text-sm">Level</p>
-                  <p className="text-white font-medium">{scan.level}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400 text-sm">Timeout</p>
-                  <p className="text-white font-medium">{scan.timeout}s</p>
-                </div>
-                <div>
-                  <p className="text-gray-400 text-sm">Created</p>
-                  <p className="text-white font-medium">{new Date(scan.created_at).toLocaleString()}</p>
-                </div>
-                <div className="md:col-span-3">
-                  <p className="text-gray-400 text-sm">Modules</p>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {(scan.modules || []).map(module => (
-                      <span key={module} className="px-2 py-1 bg-gray-600 text-white text-xs rounded">
-                        {module}
-                      </span>
-                    ))}
+              
+              {selectedScan === scan.id && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 p-4 bg-gray-700/30 rounded-lg">
+                  <div>
+                    <p className="text-gray-400 text-sm">Scope</p>
+                    <p className="text-white font-medium">{scan.scope}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-sm">Depth</p>
+                    <p className="text-white font-medium">{scan.depth}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-sm">Level</p>
+                    <p className="text-white font-medium">{scan.level}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-sm">Timeout</p>
+                    <p className="text-white font-medium">{scan.timeout}s</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-sm">Created</p>
+                    <p className="text-white font-medium">{new Date(scan.created_at).toLocaleString()}</p>
+                  </div>
+                  <div className="md:col-span-3">
+                    <p className="text-gray-400 text-sm">Modules</p>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {(scan.modules || []).map(module => (
+                        <span key={module} className="px-2 py-1 bg-gray-600 text-white text-xs rounded">
+                          {module}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        ))}
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
