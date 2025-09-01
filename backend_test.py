@@ -2210,7 +2210,7 @@ def main():
     import sys
     
     print("🔍 SPAWN Vulnerability Scanner Backend Test Suite")
-    print("🎯 FOCUS: SCAN QUEUE SYSTEM FUNCTIONALITY")
+    print("🎯 FOCUS: WAPITI PATH DETECTION AND EXECUTION")
     print("Testing backend at: https://scan-debug-1.preview.emergentagent.com/api")
     print()
     
@@ -2224,14 +2224,16 @@ def main():
             success = tester.run_report_export_tests()
         elif sys.argv[1] == "--review":
             success = tester.run_review_request_test()
+        elif sys.argv[1] == "--wapiti":
+            success = tester.run_wapiti_path_test()
         elif sys.argv[1] == "--queue":
             # Run only queue system tests
             success = tester.test_scan_queue_system()
         else:
             success = tester.run_comprehensive_test()
     else:
-        # Default: run comprehensive test with queue system focus
-        success = tester.run_comprehensive_test()
+        # Default: run Wapiti path test as requested in review
+        success = tester.run_wapiti_path_test()
     
     if success:
         print("\n🎉 All critical backend tests passed!")
