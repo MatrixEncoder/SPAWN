@@ -307,20 +307,85 @@ async def start_scan(scan_id: str, background_tasks: BackgroundTasks):
 
 @api_router.post("/scans/{scan_id}/stop")
 async def stop_scan(scan_id: str):
-    """Stop a running scan"""
-    if scan_id in active_scans:
-        process = active_scans[scan_id]
-        process.terminate()
-        del active_scans[scan_id]
-        
-        # Update scan result
-        await db.scan_results.update_one(
-            {"scan_id": scan_id, "status": "running"},
-            {"$set": {"status": "stopped", "completed_at": datetime.now(timezone.utc)}}
-        )
-        return {"message": "Scan stopped"}
-    else:
+    if scan_id not in active_scans:
         raise HTTPException(status_code=400, detail="No active scan found")
+    
+    result_id = active_scans[scan_id]
+    
+    # Update scan result status
+    await db.scan_results.update_one(
+        {"id": result_id},
+        {"$set": {
+            "status": "stopped",
+            "completed_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    # Remove from active scans
+    del active_scans[scan_id]
+    
+    return {"message": "Scan stopped"}
+
+@api_router.post("/scans/start-all")
+async def start_all_queued_scans(background_tasks: BackgroundTasks):
+    # Get all queued scan results
+    queued_results = await db.scan_results.find({"status": "queued"}, {"_id": 0}).to_list(None)
+    
+    if not queued_results:
+        return {"message": "No queued scans found", "started_count": 0}
+    
+    started_count = 0
+    started_scans = []
+    
+    for result in queued_results:
+        scan_id = result["scan_id"]
+        result_id = result["id"]
+        
+        # Check if scan is already running
+        if scan_id in active_scans:
+            continue
+            
+        # Get scan configuration
+        scan_config = await db.scan_configurations.find_one({"id": scan_id}, {"_id": 0})
+        if not scan_config:
+            # Update result to failed if config not found
+            await db.scan_results.update_one(
+                {"id": result_id},
+                {"$set": {
+                    "status": "failed",
+                    "error_message": "Scan configuration not found",
+                    "completed_at": datetime.now(timezone.utc)
+                }}
+            )
+            continue
+        
+        # Update result to running
+        await db.scan_results.update_one(
+            {"id": result_id},
+            {"$set": {
+                "status": "running",
+                "started_at": datetime.now(timezone.utc)
+            }}
+        )
+        
+        # Add to active scans
+        active_scans[scan_id] = result_id
+        
+        # Start scan in background
+        background_tasks.add_task(run_wapiti_scan, scan_id, scan_config, result_id)
+        
+        started_count += 1
+        started_scans.append({
+            "scan_id": scan_id,
+            "result_id": result_id,
+            "scan_name": scan_config.get("name", "Unknown")
+        })
+    
+    return {
+        "message": f"Started {started_count} queued scans",
+        "started_count": started_count,
+        "started_scans": started_scans
+    }
 
 @api_router.get("/results/{result_id}", response_model=ScanResult)
 async def get_scan_result(result_id: str):
