@@ -478,9 +478,11 @@ def get_wapiti_command():
 async def run_wapiti_scan(scan_id: str, config: dict, result_id: str):
     """Run Wapiti scan in background with real-time progress tracking"""
     try:
-        # Create output directory
+        # Create output directory with proper permissions for Docker
         output_dir = f"/tmp/wapiti_output_{scan_id}"
         os.makedirs(output_dir, exist_ok=True)
+        # Ensure directory is writable in Docker environment
+        os.chmod(output_dir, 0o755)
         
         # Get the correct Wapiti command for the current environment
         wapiti_cmd = get_wapiti_command()
