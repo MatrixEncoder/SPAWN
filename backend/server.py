@@ -1390,6 +1390,19 @@ async def export_to_html(result: dict, config: dict):
     </head>
     <body>
         <div class="container">
+            <!-- SPAWN Header -->
+            <div class="header">
+                <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+                    <div style="width: 60px; height: 60px; background: linear-gradient(45deg, #ef4444, #f97316); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                        <span style="color: white; font-weight: bold; font-size: 24px;">S</span>
+                    </div>
+                    <div>
+                        <h1 style="margin: 0; font-size: 28px; color: #1e3a8a; font-weight: bold;">SPAWN</h1>
+                        <p style="margin: 0; color: #666; font-size: 14px;">Professional Vulnerability Scanner</p>
+                    </div>
+                </div>
+                <h2 style="color: #8b0000; margin: 0; font-size: 18px;">Vulnerability Assessment Report</h2>
+            </div>
         
             <!-- Header Information Table -->
             <table class="info-table">
