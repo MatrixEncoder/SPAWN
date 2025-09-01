@@ -125,12 +125,13 @@ class ScanConfigurationCreate(BaseModel):
 class ScanResult(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     scan_id: str
-    status: str = "running"  # running, completed, failed, stopped
+    status: str = "queued"  # queued, running, completed, failed, stopped
     progress: int = 0
     vulnerabilities: List[Dict[str, Any]] = Field(default_factory=list)
     scan_summary: Dict[str, Any] = Field(default_factory=dict)
     output_files: Dict[str, str] = Field(default_factory=dict)
-    started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    started_at: Optional[datetime] = None  # Only set when scan actually starts
+    queued_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: Optional[datetime] = None
     error_message: Optional[str] = None
 
