@@ -395,9 +395,14 @@ const ProgressBar = ({ progress, status }) => {
   );
 };
 
-const ScanList = ({ scans, onRefresh }) => {
+const ScanList = ({ scans, onRefresh, results }) => {
   const [selectedScan, setSelectedScan] = useState(null);
   const [scanProgress, setScanProgress] = useState({});
+  const [startingAllScans, setStartingAllScans] = useState(false);
+
+  // Get queued scans count
+  const queuedScans = results?.filter(result => result.status === 'queued') || [];
+  const runningScans = results?.filter(result => result.status === 'running') || [];
 
   const startScan = async (scanId) => {
     try {
@@ -406,6 +411,24 @@ const ScanList = ({ scans, onRefresh }) => {
       onRefresh();
     } catch (error) {
       alert('Error starting scan: ' + error.response?.data?.detail);
+    }
+  };
+
+  const startAllQueuedScans = async () => {
+    if (queuedScans.length === 0) {
+      alert('No queued scans found!');
+      return;
+    }
+
+    setStartingAllScans(true);
+    try {
+      const response = await axios.post(`${API}/scans/start-all`);
+      alert(`Started ${response.data.started_count} scans successfully!`);
+      onRefresh();
+    } catch (error) {
+      alert('Error starting queued scans: ' + error.message);
+    } finally {
+      setStartingAllScans(false);
     }
   };
 
