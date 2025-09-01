@@ -26,11 +26,15 @@ COPY backend/requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Verify Wapiti installation
+RUN wapiti --version || echo "Wapiti installation check - may need PATH update"
+
 # Copy backend code
 COPY backend/ .
 
-# Create directory for temporary scan files
+# Create directory for temporary scan files with proper permissions
 RUN mkdir -p /tmp/wapiti_scans && chmod 755 /tmp/wapiti_scans
+RUN mkdir -p /tmp/wapiti_output && chmod 755 /tmp/wapiti_output
 
 # Expose port
 EXPOSE 8001
