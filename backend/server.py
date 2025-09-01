@@ -443,6 +443,38 @@ async def export_scan_result(result_id: str, format: str):
     elif format == "html":
         return await export_to_html(result, config)
 
+def get_wapiti_command():
+    """Detect the correct Wapiti command path for different environments"""
+    # Try platform-specific path first (current platform)
+    platform_path = "/root/.venv/bin/wapiti"
+    if os.path.exists(platform_path):
+        return platform_path
+    
+    # Check if wapiti is available in PATH (Docker and other environments)
+    try:
+        result = subprocess.run(["which", "wapiti"], capture_output=True, text=True)
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    except:
+        pass
+    
+    # Try common installation paths
+    possible_paths = [
+        "/usr/local/bin/wapiti",
+        "/usr/bin/wapiti",
+        "wapiti"  # Fallback to just the command name
+    ]
+    
+    for path in possible_paths:
+        if path == "wapiti":
+            # For the fallback, just return it (will work if in PATH)
+            return path
+        elif os.path.exists(path):
+            return path
+    
+    # Final fallback
+    return "wapiti"
+
 async def run_wapiti_scan(scan_id: str, config: dict, result_id: str):
     """Run Wapiti scan in background with real-time progress tracking"""
     try:
@@ -450,8 +482,12 @@ async def run_wapiti_scan(scan_id: str, config: dict, result_id: str):
         output_dir = f"/tmp/wapiti_output_{scan_id}"
         os.makedirs(output_dir, exist_ok=True)
         
-        # Build Wapiti command - use full path for Docker compatibility
-        cmd = ["/root/.venv/bin/wapiti", "-u", config["target_url"]]
+        # Get the correct Wapiti command for the current environment
+        wapiti_cmd = get_wapiti_command()
+        print(f"Using Wapiti command: {wapiti_cmd}")
+        
+        # Build Wapiti command - now environment-agnostic
+        cmd = [wapiti_cmd, "-u", config["target_url"]]
         
         # Add scope
         cmd.extend(["--scope", config["scope"]])
