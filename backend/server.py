@@ -270,14 +270,32 @@ async def start_scan(scan_id: str, background_tasks: BackgroundTasks):
     if scan_id in active_scans:
         raise HTTPException(status_code=400, detail="Scan is already running")
     
-    # Create scan result
-    scan_result = ScanResult(scan_id=scan_id)
-    await db.scan_results.insert_one(scan_result.dict())
+    # Check if there's already a queued result for this scan
+    existing_result = await db.scan_results.find_one({"scan_id": scan_id, "status": "queued"}, {"_id": 0})
+    
+    if existing_result:
+        # Update existing queued result to running
+        result_id = existing_result["id"]
+        await db.scan_results.update_one(
+            {"id": result_id},
+            {"$set": {
+                "status": "running",
+                "started_at": datetime.now(timezone.utc)
+            }}
+        )
+    else:
+        # Create new scan result record
+        scan_result = ScanResult(scan_id=scan_id, status="running", started_at=datetime.now(timezone.utc))
+        await db.scan_results.insert_one(scan_result.dict())
+        result_id = scan_result.id
+    
+    # Add to active scans
+    active_scans[scan_id] = result_id
     
     # Start scan in background
-    background_tasks.add_task(run_wapiti_scan, scan_id, config, scan_result.id)
+    background_tasks.add_task(run_wapiti_scan, scan_id, config, result_id)
     
-    return {"message": "Scan started", "result_id": scan_result.id}
+    return {"message": "Scan started", "result_id": result_id}
 
 @api_router.post("/scans/{scan_id}/stop")
 async def stop_scan(scan_id: str):
