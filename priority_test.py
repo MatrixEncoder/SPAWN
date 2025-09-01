@@ -11,7 +11,7 @@ from datetime import datetime
 
 class SPAWNPriorityTester:
     def __init__(self):
-        self.base_url = "https://scan-scheduler.preview.emergentagent.com/api"
+        self.base_url = "https://resume-work-10.preview.emergentagent.com/api"
         self.session = requests.Session()
         self.results = []
         

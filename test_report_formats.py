@@ -9,7 +9,7 @@ import json
 def test_report_formats():
     """Test the professional report formats"""
     
-    base_url = "https://scan-scheduler.preview.emergentagent.com/api"
+    base_url = "https://resume-work-10.preview.emergentagent.com/api"
     
     # Get available results
     results_response = requests.get(f"{base_url}/results")

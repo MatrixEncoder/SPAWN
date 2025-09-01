@@ -9,7 +9,7 @@ import time
 def test_all_exports():
     """Test all export formats with existing result"""
     result_id = "581a87f8-acc7-49b5-959d-4a9461e49dbf"
-    base_url = "https://scan-scheduler.preview.emergentagent.com/api"
+    base_url = "https://resume-work-10.preview.emergentagent.com/api"
     
     formats = ["json", "csv", "pdf", "html"]
     results = {}
@@ -30,7 +30,7 @@ def test_all_exports():
 
 def test_scan_presets():
     """Test scan presets configuration"""
-    base_url = "https://scan-scheduler.preview.emergentagent.com/api"
+    base_url = "https://resume-work-10.preview.emergentagent.com/api"
     
     try:
         response = requests.get(f"{base_url}/scan-presets", timeout=10)
@@ -56,7 +56,7 @@ def test_scan_presets():
 
 def test_quick_scan():
     """Test a quick scan to verify progress tracking"""
-    base_url = "https://scan-scheduler.preview.emergentagent.com/api"
+    base_url = "https://resume-work-10.preview.emergentagent.com/api"
     
     try:
         # Create scan config
